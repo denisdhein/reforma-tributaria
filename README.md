@@ -485,8 +485,9 @@ números.
 ### Calibrações do motor
 
 Três pontos apareceram rodando com os perfis do seed. Dois já foram
-corrigidos; o terceiro exige fundamentação externa que não existe ainda —
-documentado aqui em vez de "consertado" com um número chutado.
+corrigidos; o terceiro tem a base legal real encontrada mas não os
+números completos — documentado aqui em vez de "consertado" com um
+número chutado.
 
 **1. Base do IBS/CBS no Simples híbrido — CORRIGIDO (01/09/2026).** Em
 `app/motor/simples.py`, a apuração regular do híbrido calculava IBS/CBS sobre
@@ -544,11 +545,43 @@ fornecedor — dois fornecedores diferentes podem ter composição tributária
 bem diferente, e o motor não distingue. Resolver isso por completo pede a
 opção A (campo por linha), que ficou de fora por ora.
 
-**3. `fator_credito_fornecedor_simples` é fictício** (0,25). É o parâmetro
-que decide a comparação único vs. híbrido quando a empresa compra de
-fornecedor do Simples. Precisa de fundamentação real — o material da Kemper
-(ver memória do projeto) ajuda a calibrar por ordem de grandeza, mas não é
-fonte primária citável.
+**3. `fator_credito_fornecedor_simples` — base legal encontrada
+(02/09/2026), número ainda não corrigido.** Pesquisa (várias buscas e
+tentativas de acessar o texto integral) encontrou a base real, que muda o
+entendimento do parâmetro:
+
+- **Art. 47, §9º, II da LC 214/2025**: quando o adquirente (regime
+  regular) compra de optante do Simples que ficou no regime único, o
+  crédito é "em montante equivalente ao devido" pelo fornecedor via DAS —
+  não uma fração arbitrária da alíquota nova.
+- **Art. 58, §§4º e 5º da Resolução CGSN nº 190/2026** (publicada
+  10/08/2026, efeitos a partir de 01/01/2027): detalha que esse montante
+  corresponde "aos percentuais de IBS e CBS previstos nos Anexos I a V...
+  para a faixa de receita bruta a que a microempresa estiver sujeita" —
+  ou seja, é **por anexo e por faixa do fornecedor**, o mesmo dado que
+  `pct_ibs_cbs_no_das` (`app/seeds/regras_iniciais.py`) já tenta
+  representar. Não são dois parâmetros independentes — são a mesma coisa
+  vista de dois ângulos, e hoje o motor trata como se fossem diferentes.
+- Um número real localizado: **Anexo I, 2027–2028, CBS+IBS = 15,50% do
+  DAS** (15,33% CBS + 0,17% IBS, substituindo a fatia que hoje é
+  PIS+COFINS). Não achei a tabela completa (todos os anexos, todos os
+  anos até 2033) em texto — ela existe dentro dos Anexos da própria
+  Resolução, que os agregadores jurídicos consultados citam por número
+  mas não reproduzem em HTML; precisaria do PDF oficial do Diário Oficial
+  da União (in.gov.br, edição extra de 10/08/2026) pra extrair de
+  verdade.
+
+**Decisão consciente**: não mudei nenhum número agora. `pct_ibs_cbs_no_das`
+hoje é um valor único fixo por anexo; a lei prevê um valor **por ano**
+(cresce a partir de 2029, mesma lógica de transição que `fracoes_do_ano`
+já modela em outro lugar do motor). Usar o número de 2027-2028 como
+constante pra todos os anos melhoraria a precisão daquele período e
+pioraria a dos demais — silenciosamente, sem o código deixar isso claro.
+Prioridade, se/quando isso avançar: (1) conseguir a tabela completa (o
+PDF oficial resolveria), (2) dar a `pct_ibs_cbs_no_das` uma dimensão de
+ano, (3) só depois decidir o que fazer com
+`fator_credito_fornecedor_simples` — que pode nem precisar continuar
+existindo como parâmetro separado, dado o que a Resolução 190/2026 diz.
 
 Nenhum desses (nem os dois ainda pendentes) invalida a arquitetura: são
 calibração dentro de funções isoladas, cobertas por teste, sem acoplamento
