@@ -27,11 +27,12 @@ from app.auth.dependencias import eh_admin, usuario_api, usuario_web
 from app.auth.seguranca import EXPIRA_HORAS, NOME_COOKIE, criar_token, verificar_senha
 from app.config import settings
 from app.db import get_db
-from app.formatacao import moeda, pctfmt
+from app.formatacao import fracao_validada, moeda, pctfmt
 from app.ia.prompt import montar_contexto
 from app.ia.servico import analisar, responder_pergunta
 from app.models import (
-    CenarioAliquota, Empresa, OpcaoSimplesIBSCBS, PapelUsuario, RegrasVersao, Usuario,
+    CenarioAliquota, Empresa, OpcaoSimplesIBSCBS, PapelUsuario, RegrasVersao, TipoCenario,
+    Usuario,
 )
 from app.motor.simples import ForaDoSimples
 from app.motor import calcular
@@ -155,7 +156,9 @@ def simular(
     request: Request,
     empresa_id: int = Form(...),
     ano_base: int = Form(...),
-    cenario_id: int = Form(...),
+    cenario_id: str = Form(""),
+    ibs_personalizado: str = Form(""),
+    cbs_personalizado: str = Form(""),
     opcao_simples: str = Form(""),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(usuario_web),
@@ -165,6 +168,8 @@ def simular(
         "empresa_id": empresa_id,
         "ano_base": ano_base,
         "cenario_id": cenario_id,
+        "ibs_personalizado": ibs_personalizado,
+        "cbs_personalizado": cbs_personalizado,
         "opcao_simples": opcao_simples,
     }
     ctx.update(
@@ -182,11 +187,43 @@ def simular(
     if empresa is not None and not eh_admin(usuario) and empresa.tenant_id != usuario.tenant_id:
         empresa = None
 
-    cenario = db.get(CenarioAliquota, cenario_id)
     regras = _regras_ativa(db)
 
+    # Digitar IBS/CBS direto no formulário vale mais que o cenário
+    # escolhido no dropdown — evita o passo extra de ir em "Cenários"
+    # criar um antes de poder simular com um número específico.
+    cenario = None
+    if ibs_personalizado.strip() and cbs_personalizado.strip():
+        try:
+            ibs = fracao_validada(ibs_personalizado, "IBS digitado")
+            cbs = fracao_validada(cbs_personalizado, "CBS digitado")
+        except ValueError as exc:
+            ctx["erro"] = str(exc)
+            return templates.TemplateResponse("index.html", ctx)
+        cenario = db.scalar(
+            select(CenarioAliquota).where(
+                CenarioAliquota.tenant_id == usuario.tenant_id,
+                CenarioAliquota.aliquota_ibs == ibs,
+                CenarioAliquota.aliquota_cbs == cbs,
+            )
+        )
+        if cenario is None:
+            cenario = CenarioAliquota(
+                tenant_id=usuario.tenant_id,
+                nome=f"Personalizado (IBS {ibs_personalizado.strip()}% + CBS {cbs_personalizado.strip()}%)",
+                aliquota_ibs=ibs, aliquota_cbs=cbs,
+                fonte="Digitado direto na simulação", tipo=TipoCenario.USUARIO, ativo=True,
+            )
+            db.add(cenario)
+            db.commit()
+    elif cenario_id.strip():
+        cenario = db.get(CenarioAliquota, int(cenario_id))
+
     if empresa is None or cenario is None or regras is None:
-        ctx["erro"] = "Empresa, cenário ou regras não encontrados. A seleção pode estar desatualizada."
+        ctx["erro"] = (
+            "Empresa, cenário ou regras não encontrados. A seleção pode estar desatualizada, "
+            "ou selecione um cenário / digite IBS e CBS."
+        )
         return templates.TemplateResponse("index.html", ctx)
 
     entrada = montar_entrada(empresa)

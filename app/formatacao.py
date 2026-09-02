@@ -6,7 +6,23 @@ formata um valor na tela formata o mesmo valor quando a IA o referencia.
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+
+
+def fracao_validada(bruto: str, campo: str, minimo: str = "0", maximo: str = "100") -> Decimal:
+    """Percentual digitado (17,5) vira fração (0.175), validado entre
+    `minimo` e `maximo` (em %). Levanta ValueError com mensagem pronta
+    pra tela — mesma checagem usada em cenários e no cadastro de empresa,
+    centralizada aqui pra não duplicar (e pra rotas.py poder usar sem
+    criar import circular com cenarios.py)."""
+    bruto = (bruto or "").strip().replace(",", ".")
+    try:
+        valor = Decimal(bruto)
+    except InvalidOperation:
+        raise ValueError(f'"{campo}" precisa ser um número — recebi "{bruto}".') from None
+    if valor < Decimal(minimo) or valor > Decimal(maximo):
+        raise ValueError(f'"{campo}" precisa estar entre {minimo} e {maximo}.')
+    return valor / Decimal("100")
 
 
 def moeda(v: str | Decimal) -> str:

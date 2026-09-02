@@ -46,7 +46,7 @@
 
     <div class="campo">
       <label for="cenario_id">Cenário de alíquotas (IBS + CBS)</label>
-      <select id="cenario_id" name="cenario_id" required {% if not cenarios %}disabled{% endif %}>
+      <select id="cenario_id" name="cenario_id" {% if not cenarios %}disabled{% endif %}>
         <option value="" disabled {% if not selecionado.get('cenario_id') %}selected{% endif %}>Selecione…</option>
         {% for c in cenarios %}
           <option value="{{ c.id }}" {% if selecionado.get('cenario_id')|string == c.id|string %}selected{% endif %}>
@@ -54,6 +54,19 @@
           </option>
         {% endfor %}
       </select>
+      <p class="rodape-meta">Ou, se preferir, digite direto abaixo — não precisa cadastrar um cenário antes.</p>
+      <div class="grade-2">
+        <div>
+          <label for="ibs_personalizado">IBS (%)</label>
+          <input type="text" id="ibs_personalizado" name="ibs_personalizado" placeholder="ex.: 8,5"
+                 value="{{ selecionado.get('ibs_personalizado', '') }}">
+        </div>
+        <div>
+          <label for="cbs_personalizado">CBS (%)</label>
+          <input type="text" id="cbs_personalizado" name="cbs_personalizado" placeholder="ex.: 0,9"
+                 value="{{ selecionado.get('cbs_personalizado', '') }}">
+        </div>
+      </div>
     </div>
 
     <div class="campo">
