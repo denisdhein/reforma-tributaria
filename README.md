@@ -285,6 +285,17 @@ não é uma preferência pessoal, é um parâmetro de simulação compartilhado.
 Não tem editar nem excluir cenário ainda, só criar — fica pra depois se
 precisar.
 
+**Atalho na própria tela de simulação:** em vez de obrigar ir em
+"Cenários" criar um antes, `POST /simular` aceita `ibs_personalizado` e
+`cbs_personalizado` (campos de texto opcionais, ao lado do `<select>` de
+cenário) — digitou os dois, a rota valida com `fracao_validada` e
+procura/cria um `CenarioAliquota` (`tipo=TipoCenario.USUARIO`, nome
+`"Personalizado (IBS X% + CBS Y%)"`) no tenant do usuário, reaproveitando
+se já existir um igual (dedupe por `aliquota_ibs`+`aliquota_cbs` exatos).
+Preencheu os campos → vale mais que o `<select>`; deixou em branco → volta
+pro fluxo normal do cenário escolhido. Continua aparecendo depois na lista
+de Cenários, com o mesmo selo "hipótese sua".
+
 **Mensagem de erro melhorada (achado testando com usuário real):** simular
 uma empresa do Simples com Anexo II, IV ou V dava
 `ForaDoSimples("Anexo não parametrizado nesta versão de regras.")` —

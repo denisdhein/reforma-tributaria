@@ -9,31 +9,17 @@ testa a própria hipótese — inclusive "e se não mudar nada" (0% e 0%).
 
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
-
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth.dependencias import usuario_web
 from app.db import get_db
+from app.formatacao import fracao_validada
 from app.models import CenarioAliquota, TipoCenario, Usuario
 from app.web.rotas import _cenarios_visiveis, templates
 
 router = APIRouter(include_in_schema=False)
-
-D = Decimal
-
-
-def _percentual(bruto: str, campo: str) -> Decimal:
-    bruto = (bruto or "").strip().replace(",", ".")
-    try:
-        valor = D(bruto)
-    except InvalidOperation:
-        raise ValueError(f'"{campo}" precisa ser um número — recebi "{bruto}".') from None
-    if valor < 0 or valor > 100:
-        raise ValueError(f'"{campo}" precisa estar entre 0 e 100.')
-    return valor / D("100")
 
 
 @router.get("/cenarios", response_class=HTMLResponse)
@@ -80,8 +66,8 @@ def criar_cenario(
         })
 
     try:
-        ibs = _percentual(aliquota_ibs, "Alíquota do IBS")
-        cbs = _percentual(aliquota_cbs, "Alíquota da CBS")
+        ibs = fracao_validada(aliquota_ibs, "Alíquota do IBS")
+        cbs = fracao_validada(aliquota_cbs, "Alíquota da CBS")
     except ValueError as exc:
         return templates.TemplateResponse("cenario_novo.html", {
             "request": request, "usuario": usuario, "pagina_ativa": "cenarios",
