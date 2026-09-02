@@ -90,7 +90,16 @@ SIMPLES = {
     },
     # Fração da alíquota efetiva do DAS que corresponde a IBS+CBS.
     # É o teto do crédito transferível ao adquirente no regime único.
-    # [FICTÍCIO] valores de trabalho.
+    # [FICTÍCIO] valores de trabalho — MAS a base legal certa já foi
+    # encontrada (pesquisa de 02/09/2026, ver README "Calibrações do
+    # motor" e app/motor/simples.py): Art. 58, §§4º-5º da Resolução CGSN
+    # nº 190/2026 — o crédito é "os percentuais de IBS e CBS previstos nos
+    # Anexos I a V [da própria Resolução]... para a faixa de receita bruta"
+    # do fornecedor. É exatamente este parâmetro, só que a lei prevê UM
+    # VALOR POR ANO (cresce a partir de 2029), não um único fixo como
+    # está aqui hoje. Um dado real localizado: Anexo I, 2027-2028,
+    # CBS+IBS = 15,50% do DAS (15,33% CBS + 0,17% IBS) — não usado ainda
+    # porque aplicar só esse ano pioraria a precisão dos demais.
     "pct_ibs_cbs_no_das": {"1": 0.16, "2": 0.16, "3": 0.14, "4": 0.14, "5": 0.14},
     "limite_rbt12": 4800000.00,
     # Limitações declaradas do MVP — o motor não implementa:
@@ -112,7 +121,20 @@ IMPOSTO_SELETIVO = {
 
 # Fração do crédito cheio que uma compra de fornecedor optante pelo Simples
 # em regime único transfere ao adquirente. [FICTÍCIO] valor de trabalho —
-# é o parâmetro que decide a comparação único vs. híbrido. Fundamentar.
+# é o parâmetro que decide a comparação único vs. híbrido.
+#
+# Pesquisa de 02/09/2026 (ver README "Calibrações do motor"): a base legal
+# não é um fator uniforme como este. Art. 47, §9º, II da LC 214/2025 diz
+# que o crédito é "em montante equivalente ao devido" pelo fornecedor via
+# DAS; Art. 58, §§4º-5º da Resolução CGSN nº 190/2026 detalha que esse
+# montante é o percentual de IBS/CBS do Anexo E FAIXA do fornecedor
+# específico — ou seja, é conceitualmente o mesmo dado que
+# `pct_ibs_cbs_no_das` acima tenta representar, não um segundo parâmetro
+# independente. Consolidar os dois num só exigiria saber o anexo/faixa de
+# cada fornecedor por linha de custo, dado que `CustoEmpresa` não guarda
+# hoje (só a fração comprada de fornecedor Simples, sem saber qual anexo).
+# Mantido como está por ora — mudar a estrutura de dados é decisão maior
+# que só trocar este número.
 FATOR_CREDITO_FORNECEDOR_SIMPLES = 0.25
 
 PARAMETROS_INICIAIS = {
