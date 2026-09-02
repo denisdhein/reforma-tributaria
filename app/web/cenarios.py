@@ -1,0 +1,103 @@
+"""
+Cenários de alíquota criados pelo próprio usuário — o modelo já previa
+isso (`TipoCenario.USUARIO`, `CenarioAliquota.tenant_id`), só faltava a
+tela. Existe porque a reforma ainda está em transição: ninguém sabe se a
+alíquota de referência vai ficar como está, mudar, ou se a reforma some
+no meio do caminho. Em vez de esperar o Senado fixar um número, o usuário
+testa a própria hipótese — inclusive "e se não mudar nada" (0% e 0%).
+"""
+
+from __future__ import annotations
+
+from decimal import Decimal, InvalidOperation
+
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
+from app.auth.dependencias import usuario_web
+from app.db import get_db
+from app.models import CenarioAliquota, TipoCenario, Usuario
+from app.web.rotas import _cenarios_visiveis, templates
+
+router = APIRouter(include_in_schema=False)
+
+D = Decimal
+
+
+def _percentual(bruto: str, campo: str) -> Decimal:
+    bruto = (bruto or "").strip().replace(",", ".")
+    try:
+        valor = D(bruto)
+    except InvalidOperation:
+        raise ValueError(f'"{campo}" precisa ser um número — recebi "{bruto}".') from None
+    if valor < 0 or valor > 100:
+        raise ValueError(f'"{campo}" precisa estar entre 0 e 100.')
+    return valor / D("100")
+
+
+@router.get("/cenarios", response_class=HTMLResponse)
+def listar_cenarios(
+    request: Request, db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_web),
+) -> HTMLResponse:
+    cenarios = _cenarios_visiveis(db, usuario)
+    return templates.TemplateResponse("cenarios_lista.html", {
+        "request": request, "usuario": usuario, "pagina_ativa": "cenarios", "cenarios": cenarios,
+    })
+
+
+@router.get("/cenarios/novo", response_class=HTMLResponse)
+def form_novo_cenario(
+    request: Request, usuario: Usuario = Depends(usuario_web),
+) -> HTMLResponse:
+    return templates.TemplateResponse("cenario_novo.html", {
+        "request": request, "usuario": usuario, "pagina_ativa": "cenarios",
+        "erro": None, "valores": {},
+    })
+
+
+@router.post("/cenarios/novo", response_class=HTMLResponse)
+def criar_cenario(
+    request: Request,
+    nome: str = Form(...),
+    aliquota_ibs: str = Form(...),
+    aliquota_cbs: str = Form(...),
+    fonte: str = Form(""),
+    base_legal: str = Form(""),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(usuario_web),
+) -> HTMLResponse:
+    valores = dict(
+        nome=nome, aliquota_ibs=aliquota_ibs, aliquota_cbs=aliquota_cbs,
+        fonte=fonte, base_legal=base_legal,
+    )
+    nome = nome.strip()
+    if not nome:
+        return templates.TemplateResponse("cenario_novo.html", {
+            "request": request, "usuario": usuario, "pagina_ativa": "cenarios",
+            "erro": "Dê um nome ao cenário — ajuda a lembrar depois qual hipótese era essa.",
+            "valores": valores,
+        })
+
+    try:
+        ibs = _percentual(aliquota_ibs, "Alíquota do IBS")
+        cbs = _percentual(aliquota_cbs, "Alíquota da CBS")
+    except ValueError as exc:
+        return templates.TemplateResponse("cenario_novo.html", {
+            "request": request, "usuario": usuario, "pagina_ativa": "cenarios",
+            "erro": str(exc), "valores": valores,
+        })
+
+    cenario = CenarioAliquota(
+        tenant_id=usuario.tenant_id,
+        nome=nome,
+        aliquota_ibs=ibs,
+        aliquota_cbs=cbs,
+        fonte=(fonte.strip() or None),
+        base_legal=(base_legal.strip() or None),
+        tipo=TipoCenario.USUARIO,
+        ativo=True,
+    )
+    db.add(cenario)
+    db.commit()
+    return RedirectResponse("/cenarios?criado=1", status_code=303)

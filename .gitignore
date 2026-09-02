@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+app/web/static/uploads/*
+!app/web/static/uploads/.gitkeep
+
+# Cópia antiga/duplicada, de antes deste repositório existir — não confundir
+# com o projeto de verdade. Não apagada automaticamente; revisar manualmente.
+/reforma-tributaria/

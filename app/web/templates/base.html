@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Reforma Tributária · Simulador{% endblock %}</title>
+<script>
+  // Aplica o tema salvo antes do primeiro paint — sem isso a página pisca
+  // clara e só depois escurece.
+  (function () {
+    var tema = localStorage.getItem('tema');
+    if (tema === 'dark' || tema === 'light') {
+      document.documentElement.setAttribute('data-theme', tema);
+    }
+  })();
+</script>
+<style>
+  :root {
+    --cor-fundo: #f8fafc;
+    --cor-superficie: #ffffff;
+    --cor-superficie-alt: #f3f4f6;
+    --cor-texto: #111827;
+    --cor-texto-suave: #6b7280;
+    --cor-borda: #e5e7eb;
+    --cor-primaria: #1d4ed8;
+    --cor-primaria-fraca: #eff6ff;
+    --cor-botao-hover: #1e40af;
+    --cor-sucesso: #15803d;
+    --cor-sucesso-fraca: #f0fdf4;
+    --cor-perigo: #b91c1c;
+    --cor-perigo-fraca: #fef2f2;
+    --cor-aviso-bg: #fffbeb;
+    --cor-aviso-texto: #92400e;
+    --cor-aviso-borda: #fde68a;
+    --cor-cabecalho: #0f172a;
+    --sombra: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cor-fundo: #0b1220; --cor-superficie: #17223a; --cor-superficie-alt: #1f2c47;
+      --cor-texto: #e5e7eb; --cor-texto-suave: #94a3b8; --cor-borda: #2b3a56;
+      --cor-primaria: #60a5fa; --cor-primaria-fraca: #1c2f4d; --cor-botao-hover: #3b82f6;
+      --cor-sucesso: #4ade80; --cor-sucesso-fraca: #12271b;
+      --cor-perigo: #f87171; --cor-perigo-fraca: #331515;
+      --cor-aviso-bg: #2e2510; --cor-aviso-texto: #fbbf24; --cor-aviso-borda: #6b4a10;
+      --cor-cabecalho: #060a14;
+      --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --cor-fundo: #0b1220; --cor-superficie: #17223a; --cor-superficie-alt: #1f2c47;
+    --cor-texto: #e5e7eb; --cor-texto-suave: #94a3b8; --cor-borda: #2b3a56;
+    --cor-primaria: #60a5fa; --cor-primaria-fraca: #1c2f4d; --cor-botao-hover: #3b82f6;
+    --cor-sucesso: #4ade80; --cor-sucesso-fraca: #12271b;
+    --cor-perigo: #f87171; --cor-perigo-fraca: #331515;
+    --cor-aviso-bg: #2e2510; --cor-aviso-texto: #fbbf24; --cor-aviso-borda: #6b4a10;
+    --cor-cabecalho: #060a14;
+    --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
+    line-height: 1.55;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  header.topo {
+    background: var(--cor-cabecalho);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topo-linha1 { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  header.topo h1 { margin: 0; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+  .topo-acoes { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .topo-nav { display: flex; gap: 1.25rem; margin-top: 0.7rem; }
+  .topo-nav a {
+    color: #cbd5e1; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+    padding-bottom: 0.4rem; border-bottom: 2px solid transparent;
+  }
+  .topo-nav a.ativo, .topo-nav a:hover { color: #fff; border-bottom-color: var(--cor-primaria); }
+
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+  .cartao {
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
+    padding: 1.35rem 1.6rem;
+    box-shadow: var(--sombra);
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .cartao h2 {
+    margin-top: 0;
+    font-size: 1.05rem;
+    color: var(--cor-texto);
+  }
+  .campo { margin-bottom: 1rem; }
+  .campo label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cor-texto-suave);
+    margin-bottom: 0.3rem;
+  }
+  select, input[type=text], input[type=password], input[type=file] {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: var(--cor-superficie);
+    color: var(--cor-texto);
+  }
+  select:focus, input:focus {
+    outline: none;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-primaria) 20%, transparent);
+  }
+  input:disabled { opacity: 0.6; }
+  .grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grade-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) {
+    .grade-2, .grade-3 { grid-template-columns: 1fr; }
+  }
+  button {
+    background: var(--cor-primaria);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.4rem;
+    border-radius: 7px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .12s ease, transform .05s ease;
+  }
+  button:hover { background: var(--cor-botao-hover); }
+  button:active { transform: translateY(1px); }
+  .botao-link {
+    display: inline-block;
+    background: var(--cor-primaria); color: #fff; text-decoration: none;
+    padding: 0.6rem 1.2rem; border-radius: 7px; font-size: 0.9rem; font-weight: 600;
+  }
+  .botao-link:hover { background: var(--cor-botao-hover); }
+  .botao-secundario {
+    display: inline-block;
+    background: transparent; color: var(--cor-primaria); border: 1px solid var(--cor-borda);
+    padding: 0.6rem 1.2rem; border-radius: 7px; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .botao-secundario:hover { background: var(--cor-superficie-alt); }
+  .botao-perigo { color: var(--cor-perigo); border-color: color-mix(in srgb, var(--cor-perigo) 40%, transparent); }
+  .botao-perigo:hover { background: var(--cor-perigo-fraca); }
+  .form-excluir { margin: 0; display: inline; }
+  .botao-tabela { padding: 0.35rem 0.8rem; font-size: 0.82rem; }
+  a.botao-secundario, a.botao-link { text-decoration: none; }
+  .radios { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+  .radios label { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; font-size: 0.9rem; color: var(--cor-texto-suave); }
+  .erro, .sucesso {
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+  }
+  .erro { background: var(--cor-perigo-fraca); color: var(--cor-perigo); border-color: color-mix(in srgb, var(--cor-perigo) 30%, transparent); }
+  .sucesso { background: var(--cor-sucesso-fraca); color: var(--cor-sucesso); border-color: color-mix(in srgb, var(--cor-sucesso) 30%, transparent); }
+  .indicador {
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    background: var(--cor-superficie-alt);
+  }
+  .indicador .rotulo { font-size: 0.78rem; color: var(--cor-texto-suave); text-transform: uppercase; letter-spacing: 0.03em; }
+  .indicador .valor { font-size: 1.35rem; font-weight: 700; margin-top: 0.2rem; }
+  .indicador.aumento { background: var(--cor-perigo-fraca); }
+  .indicador.aumento .valor { color: var(--cor-perigo); }
+  .indicador.reducao { background: var(--cor-sucesso-fraca); }
+  .indicador.reducao .valor { color: var(--cor-sucesso); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--cor-borda); }
+  th { color: var(--cor-texto-suave); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .selo {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--cor-primaria-fraca);
+    color: var(--cor-primaria);
+  }
+  .aviso {
+    background: var(--cor-aviso-bg);
+    border: 1px solid var(--cor-aviso-borda);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.85rem;
+    color: var(--cor-aviso-texto);
+  }
+  .aviso ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+  .aviso li { margin-bottom: 0.3rem; }
+  .placeholder-ia {
+    background: var(--cor-primaria-fraca);
+    border: 1px dashed color-mix(in srgb, var(--cor-primaria) 45%, transparent);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+    color: var(--cor-texto);
+  }
+  .rodape-meta {
+    font-size: 0.78rem;
+    color: var(--cor-texto-suave);
+    margin-top: 0.5rem;
+  }
+
+  .botao-tema {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1;
+    border-radius: 999px;
+  }
+  .botao-tema:hover { background: #1e293b; }
+
+  .usuario-chip { display: flex; align-items: center; gap: 0.5rem; }
+  .usuario-chip .quem { font-size: 0.8rem; color: #cbd5e1; }
+  .selo-admin {
+    background: #7c3aed; color: #fff; font-size: 0.65rem; font-weight: 700;
+    padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle;
+  }
+  .topo-acoes form { margin: 0; }
+  .topo-acoes button.sair {
+    background: transparent; border: 1px solid #475569; color: #e2e8f0;
+    padding: 0.3rem 0.7rem; font-size: 0.78rem; font-weight: 500;
+  }
+  .topo-acoes button.sair:hover { background: #1e293b; }
+
+  .avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 700; color: #fff;
+    object-fit: cover; flex-shrink: 0;
+  }
+  .avatar-grande { width: 72px; height: 72px; font-size: 1.6rem; }
+
+  .chat-mensagens {
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    padding-right: 0.25rem;
+  }
+  .chat-mensagens:empty::before {
+    content: "Pergunte algo sobre este resultado — ex.: \"por que a carga caiu tanto?\"";
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+  .chat-bolha {
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    max-width: 85%;
+    white-space: pre-wrap;
+  }
+  .chat-bolha strong { display: block; font-size: 0.72rem; margin-bottom: 0.15rem; opacity: 0.7; }
+  .chat-usuario { align-self: flex-end; background: var(--cor-primaria-fraca); color: var(--cor-texto); }
+  .chat-ia { align-self: flex-start; background: var(--cor-superficie-alt); color: var(--cor-texto); }
+  .chat-ia.chat-erro { background: var(--cor-perigo-fraca); color: var(--cor-perigo); }
+  .chat-ia.chat-pensando { font-style: italic; color: var(--cor-texto-suave); background: transparent; }
+  .chat-form { display: flex; gap: 0.6rem; }
+  .chat-form input { flex: 1; }
+
+  .grafico-barras {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    height: 190px;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--cor-borda);
+  }
+  .grafico-coluna {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+    max-width: 160px;
+  }
+  .grafico-valor { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.4rem; white-space: nowrap; }
+  .grafico-barra {
+    width: 100%;
+    max-width: 90px;
+    border-radius: 6px 6px 0 0;
+    transition: height .35s ease;
+  }
+  .grafico-rotulo { font-size: 0.78rem; color: var(--cor-texto-suave); margin-top: 0.6rem; text-align: center; }
+
+  .perfil-foto-campo { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+  .chk-remover { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--cor-texto-suave); margin-top: 0.4rem; font-weight: 400; }
+
+  .grade-cadastro { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; align-items: start; }
+  .coluna-form { display: grid; gap: 1.25rem; }
+  .coluna-ajuda { position: sticky; top: 5.5rem; }
+  .coluna-ajuda .chat-mensagens { max-height: 420px; }
+  @media (max-width: 900px) {
+    .grade-cadastro { grid-template-columns: 1fr; }
+    .coluna-ajuda { position: static; }
+  }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-linha1">
+    <h1>Sistema de apoio à decisão · Reforma Tributária</h1>
+    <div class="topo-acoes">
+      <button type="button" id="botao-tema" class="botao-tema" title="Alternar tema claro/escuro">🌙</button>
+      {% if usuario %}
+        <div class="usuario-chip">
+          {% if usuario.foto_nome %}
+            <img src="/static/uploads/{{ usuario.foto_nome }}" alt="" class="avatar">
+          {% else %}
+            <span class="avatar" style="background: {{ usuario.id | cor_avatar }}">{{ usuario.nome[:1]|upper }}</span>
+          {% endif %}
+          <span class="quem">
+            {{ usuario.nome }} · {{ usuario.tenant.nome }}
+            {% if usuario.papel.value == 'admin' %}<span class="selo-admin">ADMIN</span>{% endif %}
+          </span>
+        </div>
+        <form method="post" action="/logout"><button type="submit" class="sair">Sair</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% if usuario %}
+    <nav class="topo-nav">
+      <a href="/" class="{{ 'ativo' if pagina_ativa == 'simular' }}">Simular</a>
+      <a href="/empresas" class="{{ 'ativo' if pagina_ativa == 'empresas' }}">Empresas</a>
+      <a href="/cenarios" class="{{ 'ativo' if pagina_ativa == 'cenarios' }}">Cenários</a>
+      <a href="/perfil" class="{{ 'ativo' if pagina_ativa == 'perfil' }}">Perfil</a>
+    </nav>
+  {% endif %}
+</header>
+<main>
+  {% block conteudo %}{% endblock %}
+</main>
+<script>
+  (function () {
+    var btn = document.getElementById('botao-tema');
+    function temaAtual() {
+      var explicito = document.documentElement.getAttribute('data-theme');
+      if (explicito) return explicito;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function atualizarIcone() { btn.textContent = temaAtual() === 'dark' ? '☀️' : '🌙'; }
+    atualizarIcone();
+    btn.addEventListener('click', function () {
+      var novo = temaAtual() === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', novo);
+      try { localStorage.setItem('tema', novo); } catch (e) {}
+      atualizarIcone();
+    });
+  })();
+</script>
+</body>
+</html>

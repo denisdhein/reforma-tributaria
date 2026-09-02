@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Novo cenário · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+<section class="cartao" style="max-width: 520px;">
+  <h2>Novo cenário de alíquota</h2>
+  <p class="rodape-meta">
+    Sua própria hipótese de alíquota de referência do IBS e da CBS. Não precisa ter fundamento
+    oficial — é exatamente para isso que serve: testar "e se" enquanto a reforma ainda não tem
+    número fechado. Fica visível só para o seu tenant, ao lado dos cenários oficiais.
+  </p>
+
+  <form method="post" action="/cenarios/novo">
+    <div class="campo">
+      <label for="nome">Nome do cenário *</label>
+      <input
+        type="text" id="nome" name="nome" value="{{ valores.get('nome','') }}" required
+        placeholder='Ex.: "Se a reforma for cancelada", "Cenário pessimista 30%"'
+      >
+    </div>
+
+    <div class="grade-2">
+      <div class="campo">
+        <label for="aliquota_ibs">Alíquota do IBS (%) *</label>
+        <input type="text" id="aliquota_ibs" name="aliquota_ibs" value="{{ valores.get('aliquota_ibs','') }}" placeholder="0 a 100" required>
+      </div>
+      <div class="campo">
+        <label for="aliquota_cbs">Alíquota da CBS (%) *</label>
+        <input type="text" id="aliquota_cbs" name="aliquota_cbs" value="{{ valores.get('aliquota_cbs','') }}" placeholder="0 a 100" required>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="fonte">Fonte (opcional)</label>
+      <input type="text" id="fonte" name="fonte" value="{{ valores.get('fonte','') }}" placeholder='Ex.: "estimativa própria", "notícia de jornal"'>
+    </div>
+    <div class="campo">
+      <label for="base_legal">Base legal (opcional)</label>
+      <input type="text" id="base_legal" name="base_legal" value="{{ valores.get('base_legal','') }}" placeholder="Deixe em branco se for só hipótese, sem base legal">
+    </div>
+
+    <button type="submit">Criar cenário</button>
+  </form>
+</section>
+
+{% endblock %}

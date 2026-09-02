@@ -1,0 +1,546 @@
+# Sistema de apoio à decisão · Reforma Tributária
+
+TCC — simulação de impacto da Reforma Tributária do Consumo
+(EC 132/2023, LC 214/2025, LC 227/2026).
+
+**Princípio central:** o motor determinístico calcula, a IA explica.
+Nenhuma alíquota, data ou percentual de transição vive no código.
+
+## Estado atual
+
+Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
+
+| Item | Situação |
+|---|---|
+| Modelos e migrations | pronto |
+| Parâmetros versionados e cenários de alíquota | pronto |
+| Seed com empresas fictícias | pronto |
+| Rotas de leitura | pronto |
+| Motor de cálculo | pronto (38 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
+| Simples: único vs. híbrido | pronto (motor) |
+| Interface web — rodar simulação e ver resultado | pronto (`/`, server-rendered) |
+| Login e multi-tenant (empresa/escritório, admin) | pronto — ver seção Autenticação |
+| Integração com IA + camada de verificação (RF05) | pronto — ver seção IA generativa |
+| Tema claro/escuro, navegação, perfil (foto, nome, nome da conta) | pronto |
+| Cadastro de empresa pela tela (RF01) — empresa, custos, itens | pronto — ver seção Cadastro de empresa |
+| Cenários de alíquota criados pelo usuário ("e se…") | pronto — ver seção Cenários |
+| Gráfico de comparação (RF06) | pronto — ver seção Gráficos |
+| Histórico e persistência da simulação (RF08/RF11), exportação (RF07) | não iniciado |
+
+## Subindo
+
+```bash
+docker compose up -d db          # ou um Postgres 16 local
+cp .env.example .env
+
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+alembic upgrade head
+python -m scripts.seed
+uvicorn app.main:app --reload
+```
+
+Documentação interativa em `http://localhost:8000/docs`. A interface de simulação exige
+login — ver seção Autenticação para as contas que o seed já deixa prontas.
+
+## Deploy (Render)
+
+`render.yaml` na raiz descreve tudo: web service Python + banco Postgres
+gratuito, ligados. `preDeployCommand` roda migration e seed a cada deploy —
+seguro porque os dois são idempotentes (rodar de novo não duplica nada).
+
+**Passo a passo:**
+
+1. Suba este repositório pro GitHub (você já tem o GitHub Desktop instalado
+   — `File > Add local repository`, aponta pra esta pasta, e publica).
+2. Crie conta em [render.com](https://render.com) (grátis, geralmente sem
+   pedir cartão no plano free).
+3. No painel, **New > Blueprint**, conecte o repositório do GitHub. O
+   Render lê o `render.yaml` sozinho e propõe criar o banco + o serviço web
+   juntos.
+4. Antes de confirmar, ele vai pedir pra preencher as variáveis marcadas
+   `sync: false` — só você vê e digita, nunca aparece pra mim:
+   - `OPENAI_API_KEY` — a chave da OpenAI (a mesma do seu `.env` local)
+   - `ADMIN_EMAIL` — seu e-mail de admin
+   - `ADMIN_SENHA` — a senha que você quer usar pra entrar como admin
+   `SECRET_KEY` é gerada sozinha pelo Render, ninguém escolhe.
+5. Deploy. Leva alguns minutos na primeira vez (build + migration + seed).
+   O Render te dá uma URL tipo `https://reforma-tributaria.onrender.com` —
+   é essa que você manda pro seu amigo.
+
+**Limitações do plano gratuito, pra não ter surpresa:**
+- O serviço web "dorme" depois de um tempo sem acesso — o primeiro clique
+  depois disso demora uns 30-60s pra acordar. Normal, não é erro.
+- O banco Postgres gratuito do Render expira em 90 dias (aviso por e-mail
+  antes). Pra um teste com um amigo não é problema; pra algo permanente,
+  precisaria upgrade de plano.
+- Fotos de perfil (`app/web/static/uploads/`) ficam no disco do servidor,
+  que **não é persistente** no plano free — um redeploy apaga as fotos já
+  enviadas (o resto dos dados, que fica no Postgres, não é afetado). Se
+  isso incomodar, dá pra resolver depois com um Render Disk (pago) ou
+  movendo upload pra um serviço externo — não é urgente pra uma demo.
+- Se o `render.yaml` mudar de formato entre quando isso foi escrito e
+  quando você for usar, o Render mostra erro de validação apontando o
+  campo — dá pra ajustar ali mesmo ou criar o banco e o serviço web
+  manualmente pelo painel (mais clique, mas sempre funciona).
+
+## Estrutura
+
+```
+app/
+  config.py              variáveis de ambiente
+  db.py                  engine e sessão
+  models/
+    base.py              Base, enums, JSONType portável
+    identidade.py        Tenant, Usuario
+    empresa.py           Empresa, CustoEmpresa, ItemEmpresa
+    parametros.py        CenarioAliquota, RegrasVersao
+    simulacao.py         Simulacao, AnaliseIA, LogAuditoria
+  seeds/
+    regras_iniciais.py   calendário 2026-2033, Simples, cenários
+  auth/
+    seguranca.py          hash de senha (argon2), token de sessão (JWT)
+    dependencias.py        usuario_web / usuario_api, escopo por tenant
+  api/rotas.py           rotas de leitura (JSON), autenticadas
+  web/
+    adaptador.py          Empresa (ORM) -> EntradaSimulacao (motor)
+    rotas.py               login/logout, GET / (formulário), POST /simular
+    empresas.py             cadastro de empresa (RF01) + ajuda da IA
+    cenarios.py              cenários de alíquota do usuário ("e se…")
+    graficos.py               barras de comparação (RF06), sem lib nova
+    uploads.py               salva foto de perfil em disco, nome gerado
+    templates/              Jinja2, sem build step, sem JS externo
+    static/uploads/          fotos de perfil (fora do git, .gitkeep só)
+alembic/                 migrations
+scripts/
+  seed.py                 popula parâmetros, tenants e empresas fictícias
+  criar_usuario.py         provisiona conta (uso do admin, sem cadastro público)
+```
+
+## Interface web
+
+`GET /` mostra um formulário simples: escolher uma das empresas do seed, o
+ano da simulação, o cenário de alíquotas e, se a empresa for do Simples, a
+opção a comparar. `POST /simular` roda o motor e reexibe a mesma página com
+o resultado — carga atual vs. simulada, tributos por rubrica, a tabela
+único vs. híbrido quando aplicável, as limitações (RF09) e um aviso de que
+a camada de IA (RF05) ainda não está integrada.
+
+Sem SPA, sem HTMX, sem build step: FastAPI + Jinja2 renderizam a página no
+servidor. Decisão consciente — `jinja2` já estava no `requirements.txt` e
+não há tooling de frontend no repositório; para um protótipo acadêmico,
+menos peças móveis pesa mais do que "framework moderno" no currículo da
+tecnologia. Histórico (RF11) e exportação (RF07) ficam para depois.
+Cadastro de empresa pela tela (RF01) — ver seção própria abaixo.
+
+**Nota de ambiente**: testado localmente com SQLite (sem Docker/Postgres
+disponíveis na máquina de desenvolvimento), com um pequeno shim que
+registra `now()` — que o SQLite não tem nativamente — via
+`sqlite3.Connection.create_function`, sem alterar nenhum arquivo do
+projeto. `func.now()` como `server_default` é específico de Postgres; em
+produção/dev normal, com `docker compose up -d db`, isso não é necessário.
+
+### Tema, navegação e perfil
+
+Tudo em `app/web/templates/base.html`, sem lib nova. Tema claro/escuro via
+CSS custom properties redefinidas sob `[data-theme="dark"]` e
+`@media (prefers-color-scheme: dark)` — o botão no cabeçalho grava a
+escolha em `localStorage` e um script inline no `<head>` aplica antes do
+primeiro paint (sem isso, pisca claro e escurece depois). Segue o sistema
+até o usuário escolher explicitamente.
+
+`GET/POST /perfil`: editar o próprio nome, foto (JPG/PNG/WEBP até 2 MB,
+salva em `app/web/static/uploads/` com nome gerado — nunca o nome
+original, nunca escolhido pelo cliente) e o nome da conta (`Tenant.nome` —
+rotulado "nome da empresa" ou "nome do escritório" conforme
+`Tenant.tipo`). Renomear a conta é bloqueado no servidor para papel
+`operador` (só gestor/admin), não só escondido na tela — o campo
+desabilitado no HTML não é a proteção real. Testado: editar nome + nome da
+conta, subir foto, trocar foto (a antiga é apagada do disco), remover
+foto, e rejeitar upload que não é imagem (nenhum arquivo fica no disco).
+
+Avatar sem foto usa a inicial do nome sobre uma cor tirada de uma paleta
+fixa por `usuario.id % 6` — só para não repetir a mesma cor pra todo
+mundo, não é identidade visual pensada.
+
+**Achado reportado pelo Denis: link "Simular" saindo roxo, camuflado no
+fundo escuro.** O link na listagem de empresas era um `<a>` sem `class` —
+sem cor própria, herdava o roxo padrão do navegador pra link já visitado
+(`:visited`), que não combina com o resto da paleta. `.botao-secundario`
+(usada em "Simular"/"Editar"/"Cancelar") ganhou `display`, `padding` e
+`border-radius` próprios — antes só funcionava direito em `<button>`,
+porque pegava essas propriedades da regra base de `button`, que um `<a>`
+não tem. Cor explícita em qualquer link estilizado como botão sempre
+vence o `:visited` do navegador, então isso não volta a acontecer em
+nenhum outro link da tela.
+
+## Gráfico de comparação (RF06)
+
+`app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
+gráficos** simples" — só faltava o gráfico, e o próprio wireframe (Figura
+3) já mostrava barras de "Comparação entre cenários". Sem lib nova: barra
+é `<div>` com `height` em `%`, cor via variável CSS — tema-aware de
+graça, sem duplicar cor por tema, e sem SVG/canvas/dependência.
+
+Dois gráficos na tela de resultado: **carga atual vs. simulada** (sempre,
+cor da segunda barra muda com a direção — vermelho se aumenta, verde se
+reduz) e **Simples único vs. híbrido** (só quando as duas opções foram
+calculadas — se a simulação pediu só uma, não faz sentido comparar duas
+barras; nesse caso o gráfico não aparece). Neste segundo, a opção mais
+barata fica verde, a outra cinza — ajuda a ver de cara qual vale mais a
+pena, sem precisar ler a tabela. `_montar_barras()` normaliza a barra
+maior pra 100% de altura e usa piso de 4% pra uma barra pequena não
+sumir visualmente. Não decide nenhum número novo — só a proporção visual
+de valores que o motor já calculou.
+
+Testado com a Distribuidora (Simples): os dois gráficos aparecem juntos,
+"Único" sai visivelmente mais baixo e verde (mais barato) que "Híbrido"
+— o mesmo resultado que já estava na tabela ao lado, só que visível de
+relance. Conferido nos dois temas.
+
+## Cadastro de empresa (RF01)
+
+`app/web/empresas.py` + `empresas_lista.html` / `empresa_nova.html`.
+`GET /empresas` lista as empresas do tenant (todas, se admin) com botão
+"+ Nova empresa"; `GET/POST /empresas/nova` é o formulário completo —
+identificação, regime tributário (com os campos do Simples aparecendo só
+quando o regime é Simples, via JS), faturamento e composição, margens,
+alíquotas atuais (escondidas para Simples — não é de lá que vêm), custos e
+despesas, e itens/produtos, esses dois últimos em tabelas com linhas
+adicionadas/removidas dinamicamente (`<template>` + JS puro, sem lib).
+
+A empresa nasce presa ao `tenant_id` do usuário logado — nunca escolhido
+no formulário, pra não dar pra criar empresa em tenant alheio. Sem itens
+cadastrados, a simulação cai no modo "agregado" do motor (já testado
+antes); com itens, a alíquota de cada um, quando não preenchida, herda a
+da empresa — mesma regra de `app/web/adaptador.py`, não duplicada aqui.
+Os itens precisam somar 100% do faturamento (validado no servidor); custo
+negativo e Simples sem anexo também são barrados. Em erro de validação, o
+formulário inteiro é redesenhado com o que já foi digitado — inclusive as
+linhas de custo e item — para não obrigar a pessoa a digitar tudo de novo.
+
+**Editar empresa** (`GET/POST /empresas/{id}/editar`): mesmo template
+`empresa_nova.html`, reaproveitado nos dois modos (`modo == 'editar'`
+muda a action do form, o texto do botão e o título da página). A
+validação saiu de dentro de `criar_empresa` para `_validar_e_montar()`,
+uma função só, chamada pelos dois — criar e editar não têm regra
+diferente, só o que fazem com o resultado. Ao salvar, custos e itens
+antigos são apagados e os novos inseridos do zero (mais simples que
+tentar casar linha por linha; sem nada referenciando `CustoEmpresa.id`/
+`ItemEmpresa.id` ainda, não há custo nisso). Testado: abrir o form de uma
+empresa existente com Anexo 4 (o mesmo caso da mensagem de erro acima),
+ver os campos vindos do banco em formato de tela (fração vira "17,5", não
+"0.175" — `_pct_str()`, inverso de `_fracao()`), trocar para Anexo 1 e
+salvar, e simular em seguida sem erro.
+
+**Excluir empresa** (`POST /empresas/{id}/excluir`): apaga em cascata
+(custos e itens junto, via `cascade="all, delete-orphan"` do modelo — não
+sobra órfão). Confirmação por `confirm()` do navegador antes de enviar.
+Bloqueado no servidor (não só escondido na tela) para empresa de outro
+tenant e para papel `operador` — mesma régua já usada em renomear a conta
+no perfil. Sem `Simulacao` persistida ainda, não existe histórico órfão a
+zelar; quando existir, precisa revisitar isso.
+
+**Ajuda da IA durante o cadastro** (`POST /empresas/ajuda`): chat ao lado
+do formulário para tirar dúvida sobre o que cada campo significa ("o que é
+RBT12?"). Instruída a nunca citar uma alíquota ou número específico — se
+perguntarem, redireciona para a tela de cenários ou para um contador. Essa
+garantia é só de prompt, não estrutural: diferente do chat de resultado
+(`/chat`), aqui não existe `referencias` calculada para checar a resposta
+contra nada, então não passa por `verificacao.py`/`renderizador.py`. É uma
+categoria de confiança mais fraca, declarada assim na tela e no código.
+
+## Cenários de alíquota do usuário
+
+`app/web/cenarios.py` + `cenarios_lista.html` / `cenario_novo.html`. O
+modelo já previa isso — `CenarioAliquota.tenant_id` (nulo = global,
+preenchido = de um tenant) e `TipoCenario.USUARIO` existiam desde o
+início, só não havia tela. Existe porque a reforma ainda está em
+transição: a alíquota de referência não está fixada por Resolução do
+Senado, pode mudar, e a reforma em si pode não avançar como está hoje.
+Em vez de esperar um número oficial fechado, o usuário testa a própria
+hipótese.
+
+`GET /cenarios` lista os cenários visíveis (oficiais/trava legal + os do
+próprio tenant), com selo indicando "hipótese sua" nos criados pelo
+usuário — o mesmo selo aparece no resultado da simulação (`index.html`)
+quando o cenário usado é um deles, para nunca confundir hipótese com
+número oficial. `GET/POST /cenarios/novo`: nome, alíquota do IBS e da CBS
+(0 a 100%, valida no servidor), fonte e base legal opcionais — inclusive
+"e se a reforma for cancelada" é só criar um cenário com 0% e 0%, testado
+e o motor responde corretamente (carga simulada zera, mantendo a curva de
+transição já calibrada pros tributos antigos). Cenário nasce no
+`tenant_id` do usuário logado, visível para todo mundo do mesmo tenant —
+não é uma preferência pessoal, é um parâmetro de simulação compartilhado.
+Não tem editar nem excluir cenário ainda, só criar — fica pra depois se
+precisar.
+
+**Mensagem de erro melhorada (achado testando com usuário real):** simular
+uma empresa do Simples com Anexo II, IV ou V dava
+`ForaDoSimples("Anexo não parametrizado nesta versão de regras.")` —
+correto, mas confuso pra quem não é do time. `POST /simular`
+(`app/web/rotas.py`) agora pega esse erro específico antes do `ValueError`
+genérico e explica em português claro que só os Anexos I e III têm tabela
+cadastrada hoje, e o que fazer a respeito.
+
+## Autenticação
+
+Login por cookie de sessão (JWT assinado, `argon2-cffi` no hash da senha —
+ambos já eram dependência do projeto, nada novo). `Usuario.tenant_id`
+decide o que a conta enxerga: quem não é `admin` só vê empresas e cenários
+do próprio tenant; `admin` atravessa todos. Isso vale tanto na tela (`/`,
+`/simular`) quanto na API (`/api/empresas`) — inclusive contra tentar
+simular uma empresa de outro tenant digitando o id direto no formulário
+(tratada como inexistente, não como 403, para não revelar que o id existe).
+
+**Sem cadastro público.** Contas são criadas por quem já é admin, com:
+
+```bash
+python -m scripts.criar_usuario --email joao@escritorio.com --nome "João" \
+    --tenant-nome "Escritório João Contábil" --tenant-tipo escritorio
+```
+
+`python -m scripts.seed` já deixa três contas prontas para desenvolvimento:
+
+| Conta | Tenant | Papel | Senha |
+|---|---|---|---|
+| `denisdhein@gmail.com` | Administração | admin | gerada e impressa no primeiro seed (ou `ADMIN_SENHA` no ambiente) |
+| `contador@escritoriodemo.local` | Escritório Demonstração (Distribuidora + Metalúrgica) | gestor | `demo12345` |
+| `financeiro@consultoriaaurora.local` | Consultoria Aurora ME | gestor | `demo12345` |
+
+A senha do admin não fica em lugar nenhum do código — se você perdê-la,
+apague o usuário e rode o seed de novo, ou defina `ADMIN_SENHA` antes de
+rodar. As duas contas "demo" têm senha fixa de propósito: são só empresas
+fictícias, não guardam nada a proteger, e a senha previsível ajuda a testar
+isolamento de tenant sem caçar log.
+
+**Pendências conscientes:** sem "esqueci minha senha", sem expiração de
+sessão configurável além do fixo em `app/auth/seguranca.py` (12h), sem tela
+de admin para gerenciar contas pela web (fica no CLI por enquanto).
+
+## IA generativa
+
+`app/ia/` — a camada que faltava para fechar o princípio central do TCC:
+*o motor calcula, a IA explica*. Fluxo em `POST /simular`, depois que o
+motor já produziu `resultado`:
+
+1. **`prompt.py`** monta o prompt. A IA recebe `resultado["referencias"]`
+   (o mapa chave → valor que o motor já expõe para isso) e uma instrução
+   fixa: só pode citar número no formato `{{chave}}`, nunca dígito solto —
+   nem por extenso. Sem essa regra a "IA explica" vira "IA inventa".
+2. **`cliente.py`** chama o modelo (`openai`, `OPENAI_MODEL` em
+   `app/config.py`, padrão `gpt-4o-mini`). Timeout de 30s. Qualquer falha
+   (sem chave, rede, quota, sobrecarga do provedor) vira `IAIndisponivel`
+   — vira aviso na tela, nunca 500.
+
+   Era Gemini (`google-genai`) até 31/08/2026: trocado porque o único
+   modelo disponível na chave testada (`gemini-3.6-flash`, recém-lançado —
+   `gemini-2.0-flash` e `gemini-2.5-flash` já tinham saído de linha para
+   chaves novas) respondeu com timeout e 503 de sobrecarga em sequência,
+   inviabilizando demo ao vivo. O módulo existe isolado exatamente para
+   essa troca custar pouco — só `cliente.py` mudou, prompt/verificação/
+   renderização ficaram intactos.
+3. **`verificacao.py`** roda antes de qualquer usuário ver o texto:
+   toda `{{chave}}` citada precisa existir em `referencias` (estrutural,
+   confiável — é o núcleo do checklist do TCC I, seção 4.4); mais três
+   checagens heurísticas por palavra-chave (número solto fora do formato,
+   ausência do aviso de revisão contábil, linguagem de certeza jurídica,
+   direção incoerente com o resultado). Falhou uma checagem, a resposta é
+   **descartada inteira** — não existe "renderiza mesmo assim".
+4. **`renderizador.py`** só roda depois de aprovado: troca `{{chave}}`
+   pelo valor formatado (`app/formatacao.py`, mesma função dos filtros
+   Jinja da tela — um valor não pode ser exibido diferente na tela e na
+   explicação da IA).
+
+Três estados chegam ao template (`analise.status`): `aprovada` (mostra o
+texto), `reprovada` (mostra o motivo, números do motor continuam na tela
+normalmente) ou `indisponivel` (sem chave configurada, ou erro do
+provedor — mesma ideia, a simulação não depende da IA para ser útil).
+
+**Para ligar**: coloque uma chave em `OPENAI_API_KEY` no `.env` (chave em
+https://platform.openai.com/api-keys, precisa de billing habilitado). Sem
+isso, a tela funciona normalmente e mostra "análise por IA indisponível" —
+testado assim.
+
+**Bug real pego rodando com a chave de verdade**: `_formatar()` em
+`renderizador.py` decidia se uma chave era percentual com
+`chave.endswith("_pct")` — `atual.carga_pct_receita` e
+`futuro.carga_pct_receita` têm `_pct` no meio do nome, não no fim, então
+caíam no `return valor` cru: a análise mostrou "0.201800 da receita" em
+vez de "20,18%". Trocado para `"_pct" in chave` (substring). A verificação
+não pegou porque o texto usava `{{chave}}` corretamente — o defeito era só
+na formatação, depois da aprovação. Ficou mais claro depois disso que o
+`_formatar()` é uma lista branca: uma chave nova do motor que não bata em
+nenhum dos quatro casos (`_rs`, `_pct`, `aliquota_efetiva`,
+`margem_liquida`) sai crua da mesma forma, sem avisar. Não tem teste
+automatizado cobrindo isso ainda — achado por inspeção visual do
+resultado, não por suíte.
+
+### Chat — perguntas sobre o resultado
+
+Abaixo da análise, `POST /chat` deixa perguntar em linguagem livre sobre a
+simulação ("por que a carga caiu tanto?", "essa empresa pode optar pelo
+Simples híbrido?") sem reload de página — `fetch()` simples em
+`<script>` no fim de `index.html`, sem framework, sem build step.
+
+Passa pela mesma tubulação de `analisar()` (`app/ia/servico.py`:
+`_executar()` compartilhado), só que com `modo_relatorio=False`: a
+verificação continua exigindo que toda `{{chave}}` citada exista de
+verdade (isso nunca afrouxa), mas não exige mais que toda resposta cite
+alguma referência nem que sempre feche com "procure um contador" — faria
+sentido numa análise de uma tacada, rejeitaria de forma errada uma
+resposta de chat que é só conceitual ("o que é IBS?"). Testado com
+pergunta simples, pergunta de acompanhamento usando o histórico da
+conversa, e sem login (401).
+
+**Contexto sem persistência, de propósito e com uma ressalva:** a tela
+embute `resultado["referencias"]` num `<script type="application/json">`
+e o navegador reenvia esse mesmo contexto a cada pergunta — não existe
+ainda uma `Simulacao` salva no banco para o chat ler por id. Isso significa
+que um usuário autenticado pode adulterar seu próprio contexto no devtools
+e fazer a IA "confirmar" números fabricados só na tela dele — não expõe
+dado de outro tenant, não quebra a aplicação, mas é uma lacuna de
+integridade real. Fechar de vez pede persistir a simulação (RF08/RF11).
+
+**O que não está feito**: nada é salvo em `AnaliseIA`/`Simulacao` ainda —
+o modelo já existe (`app/models/simulacao.py`) para isso, mas persistir
+cada chamada (prompt, resposta, verificação, custo) fica para quando RF08
+completo entrar em pauta — e resolveria também a ressalva do parágrafo
+acima. A verificação de "coerência de direção" e de "certeza jurídica" é
+heurística por palavra-chave, não NLU — pega o grosseiro, não substitui
+leitura humana da resposta antes de usar em produção.
+
+## Decisões que já estão embutidas no código
+
+**`tenant_id` em toda tabela de negócio.** Retrofitar multi-tenant depois é
+doloroso. Empresa direta é um tenant com uma empresa; escritório é um tenant
+com várias. Mesmo objeto.
+
+**`RegrasVersao` é imutável.** Alterar cria versão nova. É o que permite
+representar 2026 a 2033 e sobreviver a mudança legislativa durante a pesquisa
+sem reescrever código.
+
+**`Simulacao` guarda snapshot congelado.** Os campos `*_snapshot` congelam
+tudo que entrou no cálculo. As FKs servem só para rastreabilidade. Sem isso,
+editar um cenário no painel admin alteraria retroativamente simulações antigas.
+
+**`CustoEmpresa.pct_fornecedor_simples`.** Comprar de fornecedor do Simples em
+regime único limita o crédito do adquirente. Sem esse campo o motor
+superestima o crédito de quem tem cadeia de fornecedores pequenos.
+
+**`Simulacao.grupo_comparacao` + `opcao_simples`.** Uma análise do Simples gera
+duas linhas — regime único e híbrido — amarradas pelo mesmo grupo.
+
+**Numeric, nunca float.** Monetário em `Numeric(18,2)`, alíquotas em
+`Numeric(9,6)` como fração. Erro de arredondamento em cálculo tributário é
+indefensável em banca.
+
+## Status dos dados de parâmetro
+
+Ver o cabeçalho de `app/seeds/regras_iniciais.py`. Resumo:
+
+- **Calendário da transição** — conforme EC 132/2023 e LC 214/2025. *Conferir
+  contra o texto legal antes da defesa.*
+- **Alíquotas de referência** — não fixadas por Resolução do Senado. Não vivem
+  nas regras: vivem em `CenarioAliquota`, trocáveis sem tocar no código.
+  Dois cenários carregados: trava legal de 26,5% (LC 214/2025, art. 475, §11)
+  e estimativa CGIBS de 27,91% (Resolução 14, de 29/07/2026).
+- **Anexos II, IV e V do Simples** — vazios, a preencher.
+- **`pct_ibs_cbs_no_das`** — fictício, valores de trabalho.
+- **Imposto Seletivo** — desligado. Alíquotas dependem de lei ainda não aprovada.
+
+## Limitações declaradas do MVP
+
+Não implementados, por escopo: Fator R, sublimites estaduais, segregação de
+receitas, substituição tributária, monofásicos, MEI. Estão listados em
+`parametros["simples"]["nao_implementado"]` para aparecerem no relatório.
+
+## Próximo passo
+
+Motor de cálculo: assinatura das funções, formato do `resultado` em JSON e os
+identificadores estáveis que a camada de IA vai referenciar.
+
+## Motor de cálculo — estado
+
+Implementado e com 38 testes passando (`pytest tests/`). Cobre: cenário atual
+a plena carga como baseline fixo, transição ano a ano de 2026 a 2033 somando
+resíduo dos tributos antigos com IBS/CBS, cálculo item a item com queda para
+agregado, regimes diferenciados por item, crédito amplo com redução para
+fornecedor do Simples, e a comparação Simples único vs. híbrido.
+
+O resultado inclui `referencias`: mapa plano de identificador estável para
+valor. É o que a camada de IA vai receber — ela referencia chaves, não digita
+números.
+
+### Calibrações do motor
+
+Três pontos apareceram rodando com os perfis do seed. Dois já foram
+corrigidos; o terceiro exige fundamentação externa que não existe ainda —
+documentado aqui em vez de "consertado" com um número chutado.
+
+**1. Base do IBS/CBS no Simples híbrido — CORRIGIDO (01/09/2026).** Em
+`app/motor/simples.py`, a apuração regular do híbrido calculava IBS/CBS sobre
+a receita **bruta**, enquanto o resto do motor sempre usa a líquida (mesmo
+erro que `test_ignorar_por_fora_superestimaria_a_carga` já cobria para os
+outros regimes, só que ninguém tinha escrito o equivalente para o híbrido).
+Confirmado à mão com a Distribuidora do seed antes de mexer: `ibs_cbs_por_fora`
+batia exatamente `3.200.000 × 26,5% = 848.000,00` — a bruta multiplicada
+direto pela alíquota. Corrigido para usar `receita - das_reduzido` (o que
+ainda fica embutido no preço depois do IBS/CBS sair do DAS), com
+`test_hibrido_usa_receita_liquida_nao_a_bruta` como regressão. Resultado
+prático: o gap entre único e híbrido nessa mesma empresa caiu de
+R$ 189.851,87 para R$ 107.422,91 (~43% menor) — o híbrido continua mais caro
+pra essa empresa específica, mas por uma margem bem menor e agora correta.
+
+**2. Crédito amplo — CORRIGIDO (02/09/2026), com ressalva.** A hipótese
+original ("dupla contagem entre a base líquida e o crédito das aquisições")
+não se confirmou por leitura do código: débito (sobre receita) e crédito
+(sobre custo) usam bases matematicamente independentes, do jeito que um IVA
+não cumulativo deveria funcionar. O que apareceu, investigando de verdade,
+foi uma **assimetria diferente**: a receita usada no débito é líquida dos
+tributos *atuais* (`atual.calcular()` desconta ICMS/PIS/COFINS/ISS antes de
+virar base do IBS/CBS), mas o custo usado no crédito
+(`CustoEmpresa.valor_anual`) entrava **sem nenhum desconto equivalente** —
+credita-se IBS/CBS em cima de um preço que ainda pode carregar imposto
+antigo embutido, inflando o crédito.
+
+Três saídas foram avaliadas com o Denis: (A) campo de % de imposto embutido
+por linha de custo — mais preciso, mas ninguém sabe esse número de cabeça
+por fornecedor, e o formulário de cadastro já é grande; (B) só documentar a
+convenção "digite líquido" — zero código, mas não resolve de verdade, quem
+preenche vai copiar o valor bruto da nota fiscal do mesmo jeito; (C) um
+fator único por empresa, aplicado a todos os custos — meio-termo, mesmo
+padrão que `pct_compras_com_credito` já usa pro sistema atual. **Escolhida:
+opção C.**
+
+Novo campo `Empresa.pct_imposto_embutido_custos` (migration `ff825da42c0e`),
+propagado por `EntradaSimulacao.pct_imposto_embutido_custos` até
+`futuro.calcular_creditos()` e o crédito do híbrido em `simples.py` (ambos
+tinham o mesmo problema — corrigidos juntos). Desconta a fração informada de
+`custo.valor_anual` antes de aplicar a alíquota nova:
+`credito = valor_anual × (1 − fator) × aliq_total`. Não informado (padrão)
+mantém o comportamento anterior — testes antigos passam sem alteração.
+Testado com números exatos (`test_pct_imposto_embutido_desconta_credito_do_custo`,
+`test_simples_hibrido_tambem_desconta_imposto_embutido`) e ao vivo: editando
+a Metalúrgica do seed com 20% de imposto embutido, a carga simulada de 2033
+subiu de R$ 492.900,00 (1,76% da receita — o resultado suspeito original) para
+R$ 1.414.570,00 (5,05% da receita), com a limitação exibindo a premissa
+usada ("Crédito de IBS/CBS sobre custos descontado em 20,00%..."). Campo de
+formulário em "Custos e despesas" no cadastro de empresa, com texto de ajuda
+explicando o que é — deixado em branco assume 0% (nenhuma mudança).
+
+**Ressalva que continua valendo**: é uma média por empresa, não por
+fornecedor — dois fornecedores diferentes podem ter composição tributária
+bem diferente, e o motor não distingue. Resolver isso por completo pede a
+opção A (campo por linha), que ficou de fora por ora.
+
+**3. `fator_credito_fornecedor_simples` é fictício** (0,25). É o parâmetro
+que decide a comparação único vs. híbrido quando a empresa compra de
+fornecedor do Simples. Precisa de fundamentação real — o material da Kemper
+(ver memória do projeto) ajuda a calibrar por ordem de grandeza, mas não é
+fonte primária citável.
+
+Nenhum desses (nem os dois ainda pendentes) invalida a arquitetura: são
+calibração dentro de funções isoladas, cobertas por teste, sem acoplamento
+com o resto do motor.

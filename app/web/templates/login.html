@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar · Reforma Tributária{% endblock %}
+{% block conteudo %}
+<section class="cartao" style="max-width: 380px; margin: 2rem auto;">
+  <h2>Entrar</h2>
+  {% if erro %}
+    <div class="erro" style="margin-bottom: 1rem;">{{ erro }}</div>
+  {% endif %}
+  <form method="post" action="/login">
+    <div class="campo">
+      <label for="email">E-mail</label>
+      <input type="text" id="email" name="email" required autofocus>
+    </div>
+    <div class="campo">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" name="senha" required>
+    </div>
+    <button type="submit">Entrar</button>
+  </form>
+  <p class="rodape-meta">
+    Acesso por conta provisionada — não há cadastro público. Fale com o administrador
+    do sistema para receber um usuário.
+  </p>
+</section>
+{% endblock %}
