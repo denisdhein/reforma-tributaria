@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Empresas · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+{% if request.query_params.get('criada') %}
+  <div class="sucesso">Empresa cadastrada. Já aparece no formulário de simulação.</div>
+{% endif %}
+{% if request.query_params.get('excluida') %}
+  <div class="sucesso">Empresa excluída.</div>
+{% endif %}
+{% if request.query_params.get('editada') %}
+  <div class="sucesso">Empresa atualizada.</div>
+{% endif %}
+
+<section class="cartao">
+  <div style="display:flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <h2 style="margin: 0;">Empresas</h2>
+    <a href="/empresas/nova" class="botao-link">+ Nova empresa</a>
+  </div>
+
+  {% if not empresas %}
+    <p class="rodape-meta" style="margin-top: 1rem;">
+      Nenhuma empresa cadastrada ainda. Clique em "+ Nova empresa" para começar.
+    </p>
+  {% else %}
+    <table style="margin-top: 1rem;">
+      <thead>
+        <tr>
+          <th>Razão social</th><th>Regime</th><th>UF/Município</th>
+          <th class="num">Faturamento anual</th><th colspan="3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in empresas %}
+          <tr>
+            <td>{{ e.razao_social }}</td>
+            <td>{{ e.regime.value }}{% if e.simples_anexo %} (anexo {{ e.simples_anexo }}){% endif %}</td>
+            <td>{{ e.uf }} · {{ e.municipio }}</td>
+            <td class="num">{{ e.faturamento_anual|moeda }}</td>
+            <td><a href="/" class="botao-secundario botao-tabela">Simular</a></td>
+            <td><a href="/empresas/{{ e.id }}/editar" class="botao-secundario botao-tabela">Editar</a></td>
+            <td>
+              {% if usuario.papel.value != 'operador' %}
+                <form method="post" action="/empresas/{{ e.id }}/excluir" class="form-excluir"
+                      onsubmit="return confirm('Excluir {{ e.razao_social }}? Isso apaga também os custos e itens cadastrados. Não tem como desfazer.');">
+                  <button type="submit" class="botao-secundario botao-perigo botao-tabela">Excluir</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</section>
+
+{% endblock %}

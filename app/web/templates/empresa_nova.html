@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar empresa' if modo == 'editar' else 'Nova empresa' }} · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+<div class="grade-cadastro">
+<form
+  method="post"
+  action="{{ '/empresas/' ~ empresa_id ~ '/editar' if modo == 'editar' else '/empresas/nova' }}"
+  class="coluna-form"
+>
+
+  <section class="cartao">
+    <h2>Identificação</h2>
+    <div class="grade-2">
+      <div class="campo">
+        <label for="razao_social">Razão social *</label>
+        <input type="text" id="razao_social" name="razao_social" value="{{ valores.get('razao_social','') }}" required>
+      </div>
+      <div class="campo">
+        <label for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" name="cnpj" value="{{ valores.get('cnpj','') }}" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="grade-3">
+      <div class="campo">
+        <label for="uf">UF *</label>
+        <select id="uf" name="uf" required>
+          <option value="" disabled {% if not valores.get('uf') %}selected{% endif %}>Selecione…</option>
+          {% for u in ufs %}
+            <option value="{{ u }}" {% if valores.get('uf') == u %}selected{% endif %}>{{ u }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo" style="grid-column: span 2;">
+        <label for="municipio">Município *</label>
+        <input type="text" id="municipio" name="municipio" value="{{ valores.get('municipio','') }}" required>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="ramo">Ramo de atividade</label>
+      <input type="text" id="ramo" name="ramo" value="{{ valores.get('ramo','') }}" placeholder="Ex.: comércio atacadista, indústria metalúrgica…">
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Regime tributário</h2>
+    <div class="campo">
+      <label for="regime">Regime *</label>
+      <select id="regime" name="regime" required>
+        <option value="" disabled {% if not valores.get('regime') %}selected{% endif %}>Selecione…</option>
+        {% for r in regimes %}
+          <option value="{{ r.value }}" {% if valores.get('regime') == r.value %}selected{% endif %}>{{ rotulos_regime[r] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="grade-2 campos-simples" style="display: none;">
+      <div class="campo">
+        <label for="simples_anexo">Anexo do Simples</label>
+        <select id="simples_anexo" name="simples_anexo">
+          <option value="">Selecione…</option>
+          {% for n in range(1, 6) %}
+            <option value="{{ n }}" {% if valores.get('simples_anexo') == n|string %}selected{% endif %}>Anexo {{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="simples_opcao_ibs_cbs">Opção IBS/CBS a partir de 2027</label>
+        <select id="simples_opcao_ibs_cbs" name="simples_opcao_ibs_cbs">
+          <option value="">Ainda não decidido</option>
+          <option value="unico" {% if valores.get('simples_opcao_ibs_cbs') == 'unico' %}selected{% endif %}>Único (dentro do DAS)</option>
+          <option value="hibrido" {% if valores.get('simples_opcao_ibs_cbs') == 'hibrido' %}selected{% endif %}>Híbrido (por fora do DAS)</option>
+        </select>
+        <p class="rodape-meta">Só de referência — a simulação roda as duas opções de qualquer forma.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Faturamento e composição</h2>
+    <div class="grade-2">
+      <div class="campo">
+        <label for="faturamento_anual">Faturamento anual (R$) *</label>
+        <input type="text" id="faturamento_anual" name="faturamento_anual" value="{{ valores.get('faturamento_anual','') }}" placeholder="3200000.00" required>
+      </div>
+      <div class="campo">
+        <label for="rbt12">RBT12 (R$)</label>
+        <input type="text" id="rbt12" name="rbt12" value="{{ valores.get('rbt12','') }}" placeholder="Se vazio, usa o faturamento anual">
+      </div>
+    </div>
+    <p class="rodape-meta">Composição do faturamento — em %, deve somar próximo de 100.</p>
+    <div class="grade-3">
+      <div class="campo">
+        <label for="pct_interno">% Interno (mesma UF)</label>
+        <input type="text" id="pct_interno" name="pct_interno" value="{{ valores.get('pct_interno','') }}" placeholder="70">
+      </div>
+      <div class="campo">
+        <label for="pct_interestadual">% Interestadual</label>
+        <input type="text" id="pct_interestadual" name="pct_interestadual" value="{{ valores.get('pct_interestadual','') }}" placeholder="30">
+      </div>
+      <div class="campo">
+        <label for="pct_exportacao">% Exportação</label>
+        <input type="text" id="pct_exportacao" name="pct_exportacao" value="{{ valores.get('pct_exportacao','') }}" placeholder="0">
+      </div>
+    </div>
+    <div class="campo" style="max-width: 220px;">
+      <label for="pct_consumidor_final">% Consumidor final</label>
+      <input type="text" id="pct_consumidor_final" name="pct_consumidor_final" value="{{ valores.get('pct_consumidor_final','') }}" placeholder="0">
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Margens</h2>
+    <div class="grade-2">
+      <div class="campo">
+        <label for="margem_bruta">Margem bruta (%)</label>
+        <input type="text" id="margem_bruta" name="margem_bruta" value="{{ valores.get('margem_bruta','') }}" placeholder="22">
+      </div>
+      <div class="campo">
+        <label for="margem_liquida">Margem líquida (%)</label>
+        <input type="text" id="margem_liquida" name="margem_liquida" value="{{ valores.get('margem_liquida','') }}" placeholder="7">
+      </div>
+    </div>
+  </section>
+
+  <section class="cartao campos-nao-simples">
+    <h2>Alíquotas atuais praticadas</h2>
+    <p class="rodape-meta">Não se aplica ao Simples Nacional — a alíquota ali sai da tabela do anexo, não daqui.</p>
+    <div class="grade-3">
+      <div class="campo">
+        <label for="aliq_icms">ICMS (%)</label>
+        <input type="text" id="aliq_icms" name="aliq_icms" value="{{ valores.get('aliq_icms','') }}" placeholder="17">
+      </div>
+      <div class="campo">
+        <label for="aliq_iss">ISS (%)</label>
+        <input type="text" id="aliq_iss" name="aliq_iss" value="{{ valores.get('aliq_iss','') }}" placeholder="5">
+      </div>
+      <div class="campo">
+        <label for="aliq_ipi">IPI (%)</label>
+        <input type="text" id="aliq_ipi" name="aliq_ipi" value="{{ valores.get('aliq_ipi','') }}" placeholder="0">
+      </div>
+      <div class="campo">
+        <label for="aliq_pis">PIS (%)</label>
+        <input type="text" id="aliq_pis" name="aliq_pis" value="{{ valores.get('aliq_pis','') }}" placeholder="1.65">
+      </div>
+      <div class="campo">
+        <label for="aliq_cofins">COFINS (%)</label>
+        <input type="text" id="aliq_cofins" name="aliq_cofins" value="{{ valores.get('aliq_cofins','') }}" placeholder="7.6">
+      </div>
+      <div class="campo">
+        <label for="pct_compras_com_credito">% compras com crédito hoje</label>
+        <input type="text" id="pct_compras_com_credito" name="pct_compras_com_credito" value="{{ valores.get('pct_compras_com_credito','') }}" placeholder="70">
+      </div>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Custos e despesas</h2>
+    <p class="rodape-meta">De onde vêm os custos — decide o crédito no cenário atual e no pós-reforma.</p>
+
+    <div class="campo" style="max-width: 420px;">
+      <label for="pct_imposto_embutido_custos">% médio de imposto já embutido nos custos (sistema novo)</label>
+      <input
+        type="text" id="pct_imposto_embutido_custos" name="pct_imposto_embutido_custos"
+        value="{{ valores.get('pct_imposto_embutido_custos','') }}" placeholder="Deixe em branco se não souber"
+      >
+      <p class="rodape-meta">
+        Estimativa de quanto dos valores abaixo já é ICMS/PIS/COFINS do fornecedor embutido no
+        preço. Usada só no crédito do IBS/CBS (sistema novo) — sem isso, o crédito é calculado
+        em cima do valor cheio do custo, o que pode superestimar o crédito. Se não souber, deixe
+        em branco (assume 0%, mesmo comportamento de antes deste campo existir).
+      </p>
+    </div>
+
+    <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr><th>Origem</th><th>Valor anual (R$)</th><th>% fornecedor Simples</th><th>Gera crédito hoje?</th><th></th></tr>
+      </thead>
+      <tbody id="corpo-custos">
+        {% for origem, valor, pct_simples, credito in custos %}
+        <tr class="linha-custo">
+          <td>
+            <select name="custo_origem">
+              {% for o in origens_custo %}
+                <option value="{{ o.value }}" {% if origem == o.value %}selected{% endif %}>{{ rotulos_origem[o] }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input type="text" name="custo_valor_anual" value="{{ valor }}" placeholder="0.00"></td>
+          <td><input type="text" name="custo_pct_fornecedor_simples" value="{{ pct_simples }}" placeholder="0"></td>
+          <td>
+            <select name="custo_gera_credito">
+              <option value="nao" {% if credito != 'sim' %}selected{% endif %}>Não</option>
+              <option value="sim" {% if credito == 'sim' %}selected{% endif %}>Sim</option>
+            </select>
+          </td>
+          <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <button type="button" id="add-custo" class="botao-secundario" style="margin-top: 0.75rem;">+ Adicionar custo</button>
+    <template id="modelo-linha-custo">
+      <tr class="linha-custo">
+        <td>
+          <select name="custo_origem">
+            {% for o in origens_custo %}<option value="{{ o.value }}">{{ rotulos_origem[o] }}</option>{% endfor %}
+          </select>
+        </td>
+        <td><input type="text" name="custo_valor_anual" placeholder="0.00"></td>
+        <td><input type="text" name="custo_pct_fornecedor_simples" placeholder="0"></td>
+        <td>
+          <select name="custo_gera_credito">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </td>
+        <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
+      </tr>
+    </template>
+  </section>
+
+  <section class="cartao">
+    <h2>Itens (produtos/serviços)</h2>
+    <p class="rodape-meta">
+      Opcional. Sem itens, a simulação usa o faturamento agregado com as alíquotas gerais acima.
+      Com itens, o % de faturamento de todos eles precisa somar 100%.
+    </p>
+    <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr><th>Descrição</th><th>% do faturamento</th><th>Regime diferenciado</th><th>Imposto Seletivo?</th><th></th></tr>
+      </thead>
+      <tbody id="corpo-itens">
+        {% for descricao, pct, regime_dif, seletivo in itens %}
+        <tr class="linha-item">
+          <td><input type="text" name="item_descricao" value="{{ descricao }}"></td>
+          <td><input type="text" name="item_pct_faturamento" value="{{ pct }}" placeholder="50"></td>
+          <td>
+            <select name="item_regime_diferenciado">
+              {% for rd in regimes_diferenciados %}
+                <option value="{{ rd }}" {% if regime_dif == rd %}selected{% endif %}>{{ rd }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <select name="item_sujeito_seletivo">
+              <option value="nao" {% if seletivo != 'sim' %}selected{% endif %}>Não</option>
+              <option value="sim" {% if seletivo == 'sim' %}selected{% endif %}>Sim</option>
+            </select>
+          </td>
+          <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <button type="button" id="add-item" class="botao-secundario" style="margin-top: 0.75rem;">+ Adicionar item</button>
+    <template id="modelo-linha-item">
+      <tr class="linha-item">
+        <td><input type="text" name="item_descricao"></td>
+        <td><input type="text" name="item_pct_faturamento" placeholder="50"></td>
+        <td>
+          <select name="item_regime_diferenciado">
+            {% for rd in regimes_diferenciados %}<option value="{{ rd }}">{{ rd }}</option>{% endfor %}
+          </select>
+        </td>
+        <td>
+          <select name="item_sujeito_seletivo">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </td>
+        <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
+      </tr>
+    </template>
+  </section>
+
+  <section class="cartao">
+    <h2>Observações</h2>
+    <div class="campo" style="margin-bottom: 0;">
+      <textarea name="observacoes" rows="3" style="width:100%; padding:0.55rem 0.65rem; border:1px solid var(--cor-borda); border-radius:6px; background:var(--cor-superficie); color:var(--cor-texto); font-family:inherit;">{{ valores.get('observacoes','') }}</textarea>
+    </div>
+  </section>
+
+  <div style="display:flex; gap: 0.75rem; align-items: center;">
+    <button type="submit">{{ 'Salvar alterações' if modo == 'editar' else 'Cadastrar empresa' }}</button>
+    <a href="/empresas" class="botao-secundario">Cancelar</a>
+  </div>
+</form>
+
+<aside class="cartao coluna-ajuda">
+  <h2>Ajuda da IA <span class="rodape-meta">tire dúvidas sobre os campos</span></h2>
+  <div id="ajuda-mensagens" class="chat-mensagens"></div>
+  <form id="ajuda-form" class="chat-form" autocomplete="off">
+    <input type="text" id="ajuda-pergunta" placeholder="Ex.: o que é RBT12?" maxlength="500" required>
+    <button type="submit">Perguntar</button>
+  </form>
+  <p class="rodape-meta">
+    Essas respostas explicam conceitos, mas não são verificadas numericamente como as da
+    simulação — a IA aqui nunca deve citar uma alíquota específica. Para números reais, cadastre
+    e simule.
+  </p>
+</aside>
+</div>
+
+<script>
+  (function () {
+    var selectRegime = document.getElementById('regime');
+    var camposSimples = document.querySelector('.campos-simples');
+    var camposNaoSimples = document.querySelector('.campos-nao-simples');
+
+    function atualizarVisibilidade() {
+      var ehSimples = selectRegime.value === 'simples';
+      camposSimples.style.display = ehSimples ? 'grid' : 'none';
+      camposNaoSimples.style.display = ehSimples ? 'none' : 'block';
+    }
+    selectRegime.addEventListener('change', atualizarVisibilidade);
+    atualizarVisibilidade();
+
+    function ligarLinhaDinamica(botaoAddId, modeloId, corpoId, classeLinha) {
+      document.getElementById(botaoAddId).addEventListener('click', function () {
+        var modelo = document.getElementById(modeloId);
+        document.getElementById(corpoId).appendChild(modelo.content.cloneNode(true));
+      });
+      document.getElementById(corpoId).addEventListener('click', function (ev) {
+        if (ev.target.classList.contains('remover-linha')) {
+          var linha = ev.target.closest('tr');
+          if (linha) linha.remove();
+        }
+      });
+    }
+    ligarLinhaDinamica('add-custo', 'modelo-linha-custo', 'corpo-custos', 'linha-custo');
+    ligarLinhaDinamica('add-item', 'modelo-linha-item', 'corpo-itens', 'linha-item');
+  })();
+
+  (function () {
+    var form = document.getElementById('ajuda-form');
+    var input = document.getElementById('ajuda-pergunta');
+    var lista = document.getElementById('ajuda-mensagens');
+    var historico = [];
+
+    function bolha(autor, texto, classe) {
+      var div = document.createElement('div');
+      div.className = 'chat-bolha ' + classe;
+      var forte = document.createElement('strong');
+      forte.textContent = autor;
+      div.appendChild(forte);
+      div.appendChild(document.createTextNode(texto));
+      lista.appendChild(div);
+      lista.scrollTop = lista.scrollHeight;
+      return div;
+    }
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var pergunta = input.value.trim();
+      if (!pergunta) return;
+      input.value = '';
+      input.disabled = true;
+      bolha('Você', pergunta, 'chat-usuario');
+      var pensando = bolha('IA', 'pensando…', 'chat-ia chat-pensando');
+
+      fetch('/empresas/ajuda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historico: historico, pergunta: pergunta }),
+      })
+        .then(function (resp) { return resp.json(); })
+        .then(function (dados) {
+          pensando.remove();
+          if (dados.status === 'aprovada') {
+            bolha('IA', dados.texto, 'chat-ia');
+            historico.push({ pergunta: pergunta, resposta: dados.texto });
+          } else {
+            bolha('IA', 'Indisponível no momento (' + (dados.motivo || 'erro desconhecido') + ').', 'chat-ia chat-erro');
+          }
+        })
+        .catch(function () {
+          pensando.remove();
+          bolha('IA', 'Falha de conexão. Tente de novo.', 'chat-ia chat-erro');
+        })
+        .finally(function () {
+          input.disabled = false;
+          input.focus();
+        });
+    });
+  })();
+</script>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Cenários · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+{% if request.query_params.get('criado') %}
+  <div class="sucesso">Cenário criado. Já aparece na lista de simulação.</div>
+{% endif %}
+
+<section class="cartao">
+  <div style="display:flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <h2 style="margin: 0;">Cenários de alíquota</h2>
+      <p class="rodape-meta" style="margin-top: 0.3rem;">
+        A reforma ainda está em transição — ninguém sabe se a alíquota final vai ficar como
+        está, mudar, ou se o modelo muda de novo. Crie os seus próprios "e se" (inclusive
+        "e se a reforma não sair do papel": 0% e 0%) e compare lado a lado com os cenários
+        oficiais.
+      </p>
+    </div>
+    <a href="/cenarios/novo" class="botao-link" style="white-space: nowrap;">+ Novo cenário</a>
+  </div>
+
+  <table style="margin-top: 1.25rem;">
+    <thead>
+      <tr><th>Nome</th><th>Tipo</th><th class="num">IBS</th><th class="num">CBS</th><th class="num">Total</th><th>Fonte</th></tr>
+    </thead>
+    <tbody>
+      {% for c in cenarios %}
+        <tr>
+          <td>{{ c.nome }}</td>
+          <td>
+            {% if c.tipo.value == 'usuario' %}
+              <span class="selo" style="background: var(--cor-aviso-bg); color: var(--cor-aviso-texto);">hipótese sua</span>
+            {% elif c.tipo.value == 'trava_legal' %}
+              <span class="selo">trava legal</span>
+            {% else %}
+              <span class="selo">oficial</span>
+            {% endif %}
+          </td>
+          <td class="num">{{ c.aliquota_ibs|pctfmt(2) }}</td>
+          <td class="num">{{ c.aliquota_cbs|pctfmt(2) }}</td>
+          <td class="num">{{ c.total|pctfmt(2) }}</td>
+          <td class="rodape-meta">{{ c.fonte or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block titulo %}Perfil · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+{% if sucesso %}<div class="sucesso">{{ sucesso }}</div>{% endif %}
+
+<section class="cartao" style="max-width: 480px;">
+  <h2>Meu perfil</h2>
+  <form method="post" action="/perfil" enctype="multipart/form-data">
+    <div class="perfil-foto-campo">
+      {% if usuario.foto_nome %}
+        <img src="/static/uploads/{{ usuario.foto_nome }}" alt="" class="avatar avatar-grande">
+      {% else %}
+        <span class="avatar avatar-grande" style="background: {{ usuario.id | cor_avatar }}">{{ usuario.nome[:1]|upper }}</span>
+      {% endif %}
+      <div class="campo" style="margin-bottom: 0;">
+        <label for="foto">Foto (JPG, PNG ou WEBP, até 2 MB)</label>
+        <input type="file" id="foto" name="foto" accept=".jpg,.jpeg,.png,.webp">
+        {% if usuario.foto_nome %}
+          <label class="chk-remover">
+            <input type="checkbox" name="remover_foto_atual" value="1"> Remover foto atual
+          </label>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="nome">Seu nome</label>
+      <input type="text" id="nome" name="nome" value="{{ usuario.nome }}" required>
+    </div>
+
+    <div class="campo">
+      <label for="email">E-mail</label>
+      <input type="text" id="email" value="{{ usuario.email }}" disabled>
+    </div>
+
+    <div class="campo">
+      <label for="nome_tenant">
+        {{ 'Nome da empresa' if usuario.tenant.tipo.value == 'empresa' else 'Nome do escritório' }}
+      </label>
+      <input
+        type="text" id="nome_tenant" name="nome_tenant" value="{{ usuario.tenant.nome }}"
+        {% if usuario.papel.value == 'operador' %}disabled{% endif %} required
+      >
+      {% if usuario.papel.value == 'operador' %}
+        <p class="rodape-meta">Só gestor ou admin pode renomear a conta.</p>
+      {% endif %}
+    </div>
+
+    <div class="campo">
+      <label>Papel de acesso</label>
+      <input type="text" value="{{ usuario.papel.value }}" disabled>
+    </div>
+
+    <button type="submit">Salvar</button>
+  </form>
+</section>
+
+{% endblock %}

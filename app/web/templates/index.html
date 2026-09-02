@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block titulo %}Simulador · Reforma Tributária{% endblock %}
+
+{% macro grafico(barras) %}
+  <div class="grafico-barras">
+    {% for b in barras %}
+      <div class="grafico-coluna">
+        <div class="grafico-valor">{{ b.valor|moeda }}</div>
+        <div class="grafico-barra" style="height: {{ b.altura_pct }}%; background: {{ b.cor }};"></div>
+        <div class="grafico-rotulo">{{ b.rotulo }}</div>
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% block conteudo %}
+
+{% if erro %}
+  <div class="erro">{{ erro }}</div>
+{% endif %}
+
+<section class="cartao">
+  <h2>Nova simulação</h2>
+  <form method="post" action="/simular">
+    <div class="grade-2">
+      <div class="campo">
+        <label for="empresa_id">Empresa</label>
+        <select id="empresa_id" name="empresa_id" required {% if not empresas %}disabled{% endif %}>
+          <option value="" disabled {% if not selecionado.get('empresa_id') %}selected{% endif %}>Selecione…</option>
+          {% for e in empresas %}
+            <option value="{{ e.id }}" {% if selecionado.get('empresa_id')|string == e.id|string %}selected{% endif %}>
+              {{ e.razao_social }} · {{ e.regime.value }}{% if e.simples_anexo %} (anexo {{ e.simples_anexo }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="ano_base">Ano da simulação</label>
+        <select id="ano_base" name="ano_base" required>
+          {% for a in anos %}
+            <option value="{{ a }}" {% if selecionado.get('ano_base')|string == a|string %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="cenario_id">Cenário de alíquotas (IBS + CBS)</label>
+      <select id="cenario_id" name="cenario_id" required {% if not cenarios %}disabled{% endif %}>
+        <option value="" disabled {% if not selecionado.get('cenario_id') %}selected{% endif %}>Selecione…</option>
+        {% for c in cenarios %}
+          <option value="{{ c.id }}" {% if selecionado.get('cenario_id')|string == c.id|string %}selected{% endif %}>
+            {{ c.nome }} — IBS {{ c.aliquota_ibs|pctfmt(2) }} + CBS {{ c.aliquota_cbs|pctfmt(2) }} = {{ c.total|pctfmt(2) }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label>Opção do Simples (apenas se a empresa for optante)</label>
+      <div class="radios">
+        <label><input type="radio" name="opcao_simples" value="" {% if not selecionado.get('opcao_simples') %}checked{% endif %}> Comparar único e híbrido</label>
+        <label><input type="radio" name="opcao_simples" value="unico" {% if selecionado.get('opcao_simples') == 'unico' %}checked{% endif %}> Só único</label>
+        <label><input type="radio" name="opcao_simples" value="hibrido" {% if selecionado.get('opcao_simples') == 'hibrido' %}checked{% endif %}> Só híbrido</label>
+      </div>
+    </div>
+
+    <button type="submit">Simular</button>
+  </form>
+</section>
+
+{% if resultado %}
+  {% set a = resultado.atual %}
+  {% set f = resultado.futuro %}
+  {% set c = resultado.comparacao %}
+  {% set m = resultado.meta %}
+
+  <section class="cartao">
+    <h2>Resultado — {{ m.razao_social }}</h2>
+    <p class="rodape-meta">
+      Regime: {{ m.regime }} · Modo de cálculo: {{ m.modo_calculo }} · Ano simulado: {{ m.ano_base }} ·
+      Cenário: {{ cenario.nome }}
+      {% if cenario.tipo.value == 'usuario' %}<span class="selo" style="background: var(--cor-aviso-bg); color: var(--cor-aviso-texto);">hipótese sua</span>{% endif %}
+      (IBS {{ m.premissas.aliquota_ibs|pctfmt(2) }} + CBS {{ m.premissas.aliquota_cbs|pctfmt(2) }}) ·
+      Motor v{{ m.motor_versao }}
+    </p>
+
+    <div class="grade-3" style="margin-top: 1rem;">
+      <div class="indicador">
+        <div class="rotulo">Carga atual (sistema vigente, plena carga)</div>
+        <div class="valor">{{ a.carga_liquida_rs|moeda }}</div>
+        <div class="rodape-meta">{{ a.carga_pct_receita|pctfmt(2) }} da receita</div>
+      </div>
+      <div class="indicador">
+        <div class="rotulo">Carga em {{ m.ano_base }} (sistema simulado)</div>
+        <div class="valor">{{ f.carga_liquida_rs|moeda }}</div>
+        <div class="rodape-meta">{{ f.carga_pct_receita|pctfmt(2) }} da receita</div>
+      </div>
+      <div class="indicador {{ c.direcao }}">
+        <div class="rotulo">Variação</div>
+        <div class="valor">
+          {{ c.diferenca_rs|moeda }}
+          <span class="selo">{{ c.direcao }}</span>
+        </div>
+        <div class="rodape-meta">{{ c.diferenca_pct|pctfmt(2) }} sobre a carga atual</div>
+      </div>
+    </div>
+
+    {% if c.margem_liquida_antes is defined and c.margem_liquida_antes is not none %}
+      <p class="rodape-meta" style="margin-top: 0.9rem;">
+        Margem líquida: {{ c.margem_liquida_antes|pctfmt(2) }} → {{ c.margem_liquida_depois|pctfmt(2) }}
+        ({{ c.variacao_margem_pp }} p.p.)
+      </p>
+    {% endif %}
+
+    {% if grafico_atual_futuro %}
+      <div style="margin-top: 1.5rem;">{{ grafico(grafico_atual_futuro) }}</div>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Tributos por rubrica</h2>
+    <table>
+      <thead>
+        <tr><th>Tributo</th><th class="num">Atual (plena carga)</th><th class="num">Simulado em {{ m.ano_base }}</th></tr>
+      </thead>
+      <tbody>
+        {% set chaves = (a.tributos_rs.keys()|list + f.tributos_rs.keys()|list)|unique|list %}
+        {% for k in chaves %}
+          <tr>
+            <td>{{ k.replace('_', ' ')|upper }}</td>
+            <td class="num">{{ a.tributos_rs[k]|default('0.00')|moeda }}</td>
+            <td class="num">{{ f.tributos_rs[k]|default('0.00')|moeda }}</td>
+          </tr>
+        {% endfor %}
+        <tr>
+          <td><strong>Créditos</strong></td>
+          <td class="num">{{ a.creditos_rs|moeda }}</td>
+          <td class="num">{{ f.creditos_rs|moeda }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  {% if resultado.simples %}
+    <section class="cartao">
+      <h2>Simples Nacional — único vs. híbrido</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Opção</th><th class="num">DAS</th><th class="num">IBS/CBS por fora</th>
+            <th class="num">Créditos</th><th class="num">Carga líquida</th><th class="num">Crédito transferido ao cliente</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for opcao, dados in resultado.simples.items() %}
+            <tr>
+              <td>{{ opcao }}{% if selecionado.get('opcao_simples') == opcao %} <span class="selo">selecionada</span>{% endif %}</td>
+              <td class="num">{{ dados.das_rs|moeda }}</td>
+              <td class="num">{{ dados.ibs_cbs_por_fora_rs|moeda }}</td>
+              <td class="num">{{ dados.creditos_rs|moeda }}</td>
+              <td class="num">{{ dados.carga_liquida_rs|moeda }}</td>
+              <td class="num">{{ dados.credito_transferido_ao_cliente_rs|moeda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if grafico_simples %}
+        <div style="margin-top: 1.5rem;">{{ grafico(grafico_simples) }}</div>
+      {% endif %}
+
+      <p class="rodape-meta">
+        O crédito transferido ao cliente é o que costuma decidir a escolha entre os regimes em
+        vendas B2B — ver limitações abaixo sobre o fator de crédito do fornecedor do Simples.
+      </p>
+    </section>
+  {% endif %}
+
+  <section class="cartao">
+    <h2>Limitações desta simulação</h2>
+    <div class="aviso">
+      <strong>Estimativa, não apuração.</strong> Revisão por profissional contábil é indispensável.
+      <ul>
+        {% for lim in resultado.limitacoes %}
+          <li>{{ lim }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Análise orientativa <span class="rodape-meta">gerada por IA a partir dos números acima</span></h2>
+    {% if analise.status == 'aprovada' %}
+      <div class="placeholder-ia">{{ analise.texto }}</div>
+      <p class="rodape-meta">
+        Todo número citado veio de {{ '{{chave}}' }} do motor, nunca digitado pelo modelo —
+        verificado antes de aparecer aqui.
+        {% if analise.latencia_ms %}Gerado em {{ analise.latencia_ms }} ms.{% endif %}
+      </p>
+    {% elif analise.status == 'reprovada' %}
+      <div class="aviso">
+        <strong>Explicação descartada pela verificação automática</strong> — o texto gerado não
+        passou nas checagens (número fora do formato de referência, direção incoerente, ou
+        similar) e não é seguro mostrar. Os números do motor acima continuam confiáveis.
+        <div class="rodape-meta">Motivo: {{ analise.motivo }}</div>
+      </div>
+    {% elif analise.status == 'indisponivel' %}
+      <div class="placeholder-ia">
+        Análise por IA indisponível no momento ({{ analise.motivo }}). Os números acima são a
+        saída completa e rastreável do motor de cálculo — a explicação em texto é um
+        complemento, não um pré-requisito.
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Perguntas sobre esta simulação</h2>
+    <div id="chat-mensagens" class="chat-mensagens"></div>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input type="text" id="chat-pergunta" placeholder="Ex.: por que a carga caiu tanto?" maxlength="500" required>
+      <button type="submit">Perguntar</button>
+    </form>
+    <p class="rodape-meta">
+      As respostas passam pela mesma verificação da análise acima — só citam números reais
+      desta simulação, nunca inventados.
+    </p>
+    <script id="contexto-ia" type="application/json">{{ contexto_ia | tojson }}</script>
+    <script>
+      (function () {
+        var contexto = JSON.parse(document.getElementById('contexto-ia').textContent);
+        var form = document.getElementById('chat-form');
+        var input = document.getElementById('chat-pergunta');
+        var lista = document.getElementById('chat-mensagens');
+        var historico = [];
+
+        function bolha(autor, texto, classe) {
+          var div = document.createElement('div');
+          div.className = 'chat-bolha ' + classe;
+          var forte = document.createElement('strong');
+          forte.textContent = autor;
+          div.appendChild(forte);
+          div.appendChild(document.createTextNode(texto));
+          lista.appendChild(div);
+          lista.scrollTop = lista.scrollHeight;
+          return div;
+        }
+
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var pergunta = input.value.trim();
+          if (!pergunta) return;
+          input.value = '';
+          input.disabled = true;
+          bolha('Você', pergunta, 'chat-usuario');
+          var pensando = bolha('IA', 'pensando…', 'chat-ia chat-pensando');
+
+          fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contexto: contexto, historico: historico, pergunta: pergunta }),
+          })
+            .then(function (resp) { return resp.json(); })
+            .then(function (dados) {
+              pensando.remove();
+              if (dados.status === 'aprovada') {
+                bolha('IA', dados.texto, 'chat-ia');
+                historico.push({ pergunta: pergunta, resposta: dados.texto });
+              } else if (dados.status === 'reprovada') {
+                bolha(
+                  'IA',
+                  'Não consegui responder com segurança — a verificação automática recusou ' +
+                    'a resposta. Tente reformular a pergunta.',
+                  'chat-ia chat-erro'
+                );
+              } else {
+                bolha(
+                  'IA',
+                  'Indisponível no momento (' + (dados.motivo || 'erro desconhecido') + ').',
+                  'chat-ia chat-erro'
+                );
+              }
+            })
+            .catch(function () {
+              pensando.remove();
+              bolha('IA', 'Falha de conexão. Tente de novo.', 'chat-ia chat-erro');
+            })
+            .finally(function () {
+              input.disabled = false;
+              input.focus();
+            });
+        });
+      })();
+    </script>
+  </section>
+{% endif %}
+
+{% endblock %}
