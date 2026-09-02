@@ -47,13 +47,22 @@ login — ver seção Autenticação para as contas que o seed já deixa prontas
 ## Deploy (Render)
 
 `render.yaml` na raiz descreve tudo: web service Python + banco Postgres
-gratuito, ligados. `preDeployCommand` roda migration e seed a cada deploy —
-seguro porque os dois são idempotentes (rodar de novo não duplica nada).
+gratuito, ligados. Migration e seed rodam junto com o `startCommand` — o
+plano free do Render não tem "pre-deploy command" (achado testando: o
+Render recusa o blueprint com esse erro se tentar usar), então os dois
+entram na cadeia que sobe o serviço, toda vez que ele inicia (inclusive ao
+acordar do sono). Seguro porque os dois são idempotentes — rodar de novo
+não duplica nada.
 
 **Passo a passo:**
 
-1. Suba este repositório pro GitHub (você já tem o GitHub Desktop instalado
-   — `File > Add local repository`, aponta pra esta pasta, e publica).
+1. Suba este repositório pro GitHub — pelo GitHub Desktop (`File > Add
+   local repository`, aponta pra esta pasta, publica), ou 100% pelo site:
+   cria um repositório vazio em github.com, usa o link "uploading an
+   existing file" que aparece, e arrasta pra lá o conteúdo de
+   `git archive HEAD -o pacote.zip` extraído (evita levar `.venv`, `.env`,
+   histórico do git — só o que está versionado). Útil se a conta do GitHub
+   Desktop estiver vinculada a outra organização/empresa.
 2. Crie conta em [render.com](https://render.com) (grátis, geralmente sem
    pedir cartão no plano free).
 3. No painel, **New > Blueprint**, conecte o repositório do GitHub. O

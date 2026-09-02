@@ -10,8 +10,11 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    preDeployCommand: "alembic upgrade head && python -m scripts.seed"
-    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    # preDeployCommand não existe no plano free do Render — migration e seed
+    # entram no startCommand em vez disso. Sem problema rodar em toda
+    # subida do serviço (inclusive ao acordar do sono): os dois são
+    # idempotentes, não duplicam nem sobrescrevem nada já existente.
+    startCommand: "alembic upgrade head && python -m scripts.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.5
