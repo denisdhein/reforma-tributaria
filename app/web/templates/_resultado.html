@@ -23,6 +23,10 @@
   {% set c = resultado.comparacao %}
   {% set m = resultado.meta %}
 
+  <p class="no-imprimir" style="text-align: right;">
+    <button type="button" class="botao-secundario" onclick="window.print()">Imprimir / Exportar PDF</button>
+  </p>
+
   <section class="cartao">
     <h2>Resultado — {{ m.razao_social }}</h2>
     <p class="rodape-meta">
@@ -162,7 +166,7 @@
     {% endif %}
   </section>
 
-  <section class="cartao">
+  <section class="cartao no-imprimir">
     <h2>Perguntas sobre esta simulação</h2>
     <div id="chat-mensagens" class="chat-mensagens"></div>
     <form id="chat-form" class="chat-form" autocomplete="off">

@@ -321,10 +321,40 @@
     .grade-cadastro { grid-template-columns: 1fr; }
     .coluna-ajuda { position: static; }
   }
+
+  /* RF07 — exportar/imprimir: sem gerador de PDF no servidor, o próprio
+     "Salvar como PDF" do navegador resolve (zero dependência nova, mesmo
+     espírito de "sem lib extra" do resto do projeto). Força paleta clara
+     mesmo com tema escuro ativo — impresso em tela escura desperdiça tinta
+     e costuma sair ilegível. */
+  @media print {
+    /* !important em cada variável: sem isso, `:root[data-theme="dark"]`
+       (mais específico que `:root` puro) continua ganhando mesmo dentro
+       de @media print — achado testando com o tema escuro ativo. */
+    :root {
+      --cor-fundo: #ffffff !important; --cor-superficie: #ffffff !important;
+      --cor-superficie-alt: #f3f4f6 !important;
+      --cor-texto: #111827 !important; --cor-texto-suave: #4b5563 !important;
+      --cor-borda: #d1d5db !important;
+      --cor-primaria: #1d4ed8 !important; --cor-primaria-fraca: #eff6ff !important;
+      --cor-botao-hover: #1e40af !important;
+      --cor-sucesso: #15803d !important; --cor-sucesso-fraca: #f0fdf4 !important;
+      --cor-perigo: #b91c1c !important; --cor-perigo-fraca: #fef2f2 !important;
+      --cor-aviso-bg: #fffbeb !important; --cor-aviso-texto: #92400e !important;
+      --cor-aviso-borda: #fde68a !important;
+      --cor-cabecalho: #0f172a !important; --sombra: none !important;
+    }
+    * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .no-imprimir { display: none !important; }
+    body { background: #fff; }
+    header.topo { position: static; }
+    .cartao { box-shadow: none; border: 1px solid var(--cor-borda); break-inside: avoid; }
+    table { break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
-<header class="topo">
+<header class="topo no-imprimir">
   <div class="topo-linha1">
     <h1>Sistema de apoio à decisão · Reforma Tributária</h1>
     <div class="topo-acoes">

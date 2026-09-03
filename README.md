@@ -26,7 +26,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Cenários de alíquota criados pelo usuário ("e se…") | pronto — ver seção Cenários |
 | Gráfico de comparação (RF06) | pronto — ver seção Gráficos |
 | Histórico e persistência da simulação (RF08/RF11) | pronto — ver seção própria |
-| Exportação/impressão do relatório (RF07) | não iniciado |
+| Exportação/impressão do relatório (RF07) | pronto — ver seção própria |
 
 ## Subindo
 
@@ -142,9 +142,9 @@ Sem SPA, sem HTMX, sem build step: FastAPI + Jinja2 renderizam a página no
 servidor. Decisão consciente — `jinja2` já estava no `requirements.txt` e
 não há tooling de frontend no repositório; para um protótipo acadêmico,
 menos peças móveis pesa mais do que "framework moderno" no currículo da
-tecnologia. Exportação (RF07) fica para depois; histórico (RF11) — ver
-seção própria abaixo. Cadastro de empresa pela tela (RF01) — ver seção
-própria abaixo.
+tecnologia. Exportação/impressão (RF07) e histórico (RF11) — ver seções
+próprias abaixo. Cadastro de empresa pela tela (RF01) — ver seção própria
+abaixo.
 
 **Nota de ambiente**: testado localmente com SQLite (sem Docker/Postgres
 disponíveis na máquina de desenvolvimento), com um pequeno shim que
@@ -352,6 +352,35 @@ início do projeto — modelo pronto, tabela migrada, nada usava. Toda
   auditar, mas fica pronto pro dia que precisar), edição/exclusão de uma
   simulação salva, e filtro por empresa na listagem do histórico (só
   ordena por data por enquanto).
+
+## Exportação e impressão (RF07)
+
+Botão "Imprimir / Exportar PDF" no topo do bloco de resultado (aparece
+tanto numa simulação recém-rodada quanto reaberta do histórico, já que as
+duas telas reusam `_resultado.html`) chama `window.print()` — o próprio
+navegador oferece "Salvar como PDF" no diálogo de impressão. Decisão
+consciente: gerar PDF no servidor pediria uma biblioteca nova (WeasyPrint
+ou equivalente) e mais uma peça pra instalar/manter no Render; o navegador
+já resolve sem dependência nenhuma, mesmo raciocínio que já valeu pra não
+usar lib de gráfico no RF06.
+
+Uma classe `.no-imprimir` esconde no papel o que só faz sentido na tela —
+menu de navegação, o formulário de "Nova simulação", o botão de imprimir
+e o chat (conversa interativa não cabe em relatório impresso). Um bloco
+`@media print` em `base.html` força a paleta clara mesmo com o tema escuro
+ativo (senão sai ilegível/gasta tinta à toa) e tira sombra dos cartões.
+
+**Achado testando**: sobrescrever as variáveis de cor dentro de `@media
+print { :root { ... } }` não bastava — `:root[data-theme="dark"]` é mais
+específico que `:root` puro, então continuava ganhando mesmo estando fora
+do media query de impressão. Corrigido com `!important` em cada variável
+do bloco de impressão (única forma de vencer especificidade sem duplicar o
+seletor). Testado reaproveitando a regra `@media print` de verdade da
+folha de estilo (reescopada pra `@media screen` via JS só pra visualizar
+sem imprimir de fato) — confirmado com tema escuro ativo: fundo e texto
+dos cartões viram claro/escuro (não claro/claro), menu, formulário e chat
+somem, gráfico de barras mantém a altura (usa `height` fixo em pixels, não
+depende de viewport).
 
 ## Autenticação
 
