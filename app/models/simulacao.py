@@ -29,6 +29,7 @@ class Simulacao(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id"), index=True)
     empresa_id: Mapped[int] = mapped_column(ForeignKey("empresa.id"))
+    empresa: Mapped["Empresa"] = relationship()  # noqa: F821
 
     titulo: Mapped[str | None] = mapped_column(String(200))
     ano_base: Mapped[int] = mapped_column(Integer)

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Histórico · Reforma Tributária{% endblock %}
+
+{% block conteudo %}
+
+{% if erro %}
+  <div class="erro">{{ erro }}</div>
+{% endif %}
+
+<section class="cartao">
+  <h2>Histórico de simulações</h2>
+
+  {% if not simulacoes %}
+    <p class="rodape-meta">
+      Nenhuma simulação salva ainda. Toda simulação rodada em "Simular" entra aqui automaticamente.
+    </p>
+  {% else %}
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Ano</th>
+            <th>Cenário</th>
+            <th class="num">Carga atual</th>
+            <th class="num">Carga simulada</th>
+            <th class="num">Variação</th>
+            <th>Quando</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in simulacoes %}
+            <tr>
+              <td>{{ s.empresa.razao_social }}</td>
+              <td>{{ s.ano_base }}</td>
+              <td>
+                {{ s.cenario_aliquota_snapshot.nome }}
+                {% if s.opcao_simples %}<span class="rodape-meta">({{ s.opcao_simples.value }})</span>{% endif %}
+              </td>
+              <td class="num">{{ s.carga_atual_rs|moeda }}</td>
+              <td class="num">{{ s.carga_futura_rs|moeda }}</td>
+              <td class="num">{{ s.diferenca_rs|moeda }} ({{ s.diferenca_pct|pctfmt(2) }})</td>
+              <td class="rodape-meta">{{ s.criada_em.strftime('%d/%m/%Y %H:%M') }}</td>
+              <td><a class="botao-secundario botao-tabela" href="/historico/{{ s.id }}">Ver</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}
