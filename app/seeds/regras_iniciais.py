@@ -8,8 +8,9 @@ ATENÇÃO — status dos dados abaixo:
   [PROVISÓRIO]  As alíquotas de referência NÃO estão fixadas por Resolução do
                 Senado. Elas não vivem aqui — vivem em CenarioAliquota, para
                 serem trocadas sem tocar no código.
-  [A PREENCHER] Anexos II, IV e V do Simples, e as reduções temporárias de
-                alíquota do Simples previstas para acomodar a entrada da CBS.
+  [A PREENCHER] As reduções temporárias de alíquota do Simples previstas para
+                acomodar a entrada da CBS (Anexos I a V já completos — ver
+                fonte abaixo).
   [FICTÍCIO]    `pct_ibs_cbs_no_das` são estimativas de trabalho, para o motor
                 ter o que consumir. Substituir por apuração fundamentada.
 
@@ -60,7 +61,14 @@ REGIMES_DIFERENCIADOS = {
 # Simples Nacional
 # ---------------------------------------------------------------------------
 # Alíquota efetiva = (RBT12 * aliquota - deduzir) / RBT12
-# Fonte das tabelas: LC 123/2006, anexos com redação da LC 155/2016. CONFERIR.
+# Fonte das tabelas: LC 123/2006, anexos com redação da LC 155/2016, em vigor
+# desde 01/01/2018 — a reforma (LC 214/2025) não alterou esses percentuais.
+# Anexos II, IV e V completados em 03/09/2026, conferidos contra duas fontes
+# independentes (Contabilizei e Mentor Fiscal); Anexo IV é "sem CPP no DAS"
+# (construção, vigilância, limpeza, advocacia — INSS patronal recolhido à
+# parte); Anexo V é o de Fator R baixo (< 28% de folha/receita — acima disso
+# migra para o Anexo III, mais barato). CONFERIR contra o texto legal antes
+# de usar em defesa.
 
 ANEXO_I = [  # Comércio
     {"faixa": 1, "ate": 180000.00,  "aliquota": 0.0400, "deduzir": 0.00},
@@ -69,6 +77,15 @@ ANEXO_I = [  # Comércio
     {"faixa": 4, "ate": 1800000.00, "aliquota": 0.1070, "deduzir": 22500.00},
     {"faixa": 5, "ate": 3600000.00, "aliquota": 0.1430, "deduzir": 87300.00},
     {"faixa": 6, "ate": 4800000.00, "aliquota": 0.1900, "deduzir": 378000.00},
+]
+
+ANEXO_II = [  # Indústria
+    {"faixa": 1, "ate": 180000.00,  "aliquota": 0.0450, "deduzir": 0.00},
+    {"faixa": 2, "ate": 360000.00,  "aliquota": 0.0780, "deduzir": 5940.00},
+    {"faixa": 3, "ate": 720000.00,  "aliquota": 0.1000, "deduzir": 13860.00},
+    {"faixa": 4, "ate": 1800000.00, "aliquota": 0.1120, "deduzir": 22500.00},
+    {"faixa": 5, "ate": 3600000.00, "aliquota": 0.1470, "deduzir": 85500.00},
+    {"faixa": 6, "ate": 4800000.00, "aliquota": 0.3000, "deduzir": 720000.00},
 ]
 
 ANEXO_III = [  # Serviços em geral
@@ -80,13 +97,31 @@ ANEXO_III = [  # Serviços em geral
     {"faixa": 6, "ate": 4800000.00, "aliquota": 0.3300, "deduzir": 648000.00},
 ]
 
+ANEXO_IV = [  # Serviços sem CPP no DAS (construção, vigilância, limpeza, advocacia etc.)
+    {"faixa": 1, "ate": 180000.00,  "aliquota": 0.0450, "deduzir": 0.00},
+    {"faixa": 2, "ate": 360000.00,  "aliquota": 0.0900, "deduzir": 8100.00},
+    {"faixa": 3, "ate": 720000.00,  "aliquota": 0.1020, "deduzir": 12420.00},
+    {"faixa": 4, "ate": 1800000.00, "aliquota": 0.1400, "deduzir": 39780.00},
+    {"faixa": 5, "ate": 3600000.00, "aliquota": 0.2200, "deduzir": 183780.00},
+    {"faixa": 6, "ate": 4800000.00, "aliquota": 0.3300, "deduzir": 828000.00},
+]
+
+ANEXO_V = [  # Serviços sujeitos ao Fator R (< 28% de folha/receita)
+    {"faixa": 1, "ate": 180000.00,  "aliquota": 0.1550, "deduzir": 0.00},
+    {"faixa": 2, "ate": 360000.00,  "aliquota": 0.1800, "deduzir": 4500.00},
+    {"faixa": 3, "ate": 720000.00,  "aliquota": 0.1950, "deduzir": 9900.00},
+    {"faixa": 4, "ate": 1800000.00, "aliquota": 0.2050, "deduzir": 17100.00},
+    {"faixa": 5, "ate": 3600000.00, "aliquota": 0.2300, "deduzir": 62100.00},
+    {"faixa": 6, "ate": 4800000.00, "aliquota": 0.3050, "deduzir": 540000.00},
+]
+
 SIMPLES = {
     "anexos": {
         "1": ANEXO_I,
-        "2": [],     # [A PREENCHER] Indústria
+        "2": ANEXO_II,
         "3": ANEXO_III,
-        "4": [],     # [A PREENCHER] Serviços com CPP por fora
-        "5": [],     # [A PREENCHER] Serviços sujeitos ao Fator R
+        "4": ANEXO_IV,
+        "5": ANEXO_V,
     },
     # Fração da alíquota efetiva do DAS que corresponde a IBS+CBS.
     # É o teto do crédito transferível ao adquirente no regime único.
@@ -152,7 +187,8 @@ PARAMETROS_INICIAIS = {
 VERSAO_INICIAL = {
     "versao": "2026.08.1",
     "descricao": "Versão inicial. Calendário conforme EC 132/2023 e LC 214/2025. "
-                 "Anexos II, IV e V do Simples pendentes. pct_ibs_cbs_no_das fictício.",
+                 "Anexos I a V do Simples completos (LC 155/2016). "
+                 "pct_ibs_cbs_no_das fictício.",
     "parametros": PARAMETROS_INICIAIS,
     "vigencia_inicio": datetime(2026, 1, 1, tzinfo=timezone.utc),
 }
