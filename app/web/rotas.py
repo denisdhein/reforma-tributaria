@@ -12,7 +12,9 @@ app/web/empresas.py; contas de usuário são provisionadas via
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
@@ -31,10 +33,11 @@ from app.formatacao import fracao_validada, moeda, pctfmt
 from app.ia.prompt import montar_contexto
 from app.ia.servico import analisar, responder_pergunta
 from app.models import (
-    CenarioAliquota, Empresa, OpcaoSimplesIBSCBS, PapelUsuario, RegrasVersao, TipoCenario,
-    Usuario,
+    AnaliseIA, CenarioAliquota, Empresa, OpcaoSimplesIBSCBS, PapelUsuario, RegrasVersao,
+    Simulacao, StatusVerificacao, TipoCenario, Usuario,
 )
 from app.motor import calcular
+from app.motor.tipos import EntradaSimulacao
 from app.web.adaptador import montar_entrada
 from app.web.graficos import montar_grafico_atual_futuro, montar_grafico_simples
 from app.web.uploads import UploadInvalido, remover_foto, salvar_foto
@@ -132,6 +135,89 @@ def _contexto_base(db: Session, usuario: Usuario) -> dict:
     }
 
 
+def _jsonavel(valor):
+    """Converte Decimal (não serializável em JSON puro) para str, recursivamente
+    — usado pra congelar o snapshot de entrada em Simulacao.dados_informados."""
+    if isinstance(valor, Decimal):
+        return str(valor)
+    if isinstance(valor, dict):
+        return {k: _jsonavel(v) for k, v in valor.items()}
+    if isinstance(valor, (list, tuple)):
+        return [_jsonavel(v) for v in valor]
+    return valor
+
+
+_STATUS_VERIFICACAO = {
+    "aprovada": StatusVerificacao.APROVADA,
+    "reprovada": StatusVerificacao.REPROVADA,
+    "indisponivel": StatusVerificacao.NAO_EXECUTADA,
+}
+
+
+def _salvar_simulacao(
+    db: Session, usuario: Usuario, empresa: Empresa, cenario: CenarioAliquota,
+    regras: RegrasVersao, ano_base: int, opcao: str | None,
+    entrada: EntradaSimulacao, resultado: dict, analise: dict,
+) -> Simulacao:
+    """
+    RF08/RF11 — cada POST /simular bem sucedido vira uma linha aqui, sem
+    passo extra de "salvar". Os campos *_snapshot congelam o que entrou no
+    cálculo (ver docstring de Simulacao): editar o cenário ou os parâmetros
+    depois não pode alterar retroativamente o que já foi salvo. Fecha
+    também a lacuna do chat vindo de contexto de cliente — ver /chat abaixo.
+    """
+    c = resultado["comparacao"]
+    simulacao = Simulacao(
+        tenant_id=empresa.tenant_id,
+        empresa_id=empresa.id,
+        ano_base=ano_base,
+        dados_informados=_jsonavel(asdict(entrada)),
+        cenario_aliquota_snapshot=_jsonavel({
+            "id": cenario.id, "nome": cenario.nome,
+            "aliquota_ibs": cenario.aliquota_ibs, "aliquota_cbs": cenario.aliquota_cbs,
+            "fonte": cenario.fonte, "tipo": cenario.tipo.value if cenario.tipo else None,
+        }),
+        regras_snapshot=regras.parametros,
+        motor_versao=resultado["meta"]["motor_versao"],
+        resultado=resultado,
+        carga_atual_rs=Decimal(resultado["atual"]["carga_liquida_rs"]),
+        carga_futura_rs=Decimal(resultado["futuro"]["carga_liquida_rs"]),
+        diferenca_rs=Decimal(c["diferenca_rs"]),
+        diferenca_pct=Decimal(c["diferenca_pct"]),
+        margem_liquida_depois=(
+            Decimal(c["margem_liquida_depois"]) if "margem_liquida_depois" in c else None
+        ),
+        opcao_simples=OpcaoSimplesIBSCBS(opcao) if opcao else None,
+        cenario_aliquota_id=cenario.id,
+        regras_versao_id=regras.id,
+        criada_por_id=usuario.id,
+    )
+    db.add(simulacao)
+    db.flush()
+
+    # Só grava a análise se a IA de fato respondeu algo (aprovada ou
+    # reprovada) — "indisponivel" não tem resposta_bruta pra satisfazer a
+    # coluna NOT NULL, e não haveria o que auditar mesmo.
+    if analise.get("resposta_bruta"):
+        db.add(AnaliseIA(
+            tenant_id=empresa.tenant_id,
+            simulacao_id=simulacao.id,
+            modelo=settings.OPENAI_MODEL,
+            prompt_enviado=analise["prompt_enviado"],
+            resposta_bruta=analise["resposta_bruta"],
+            resposta_renderizada=analise.get("texto"),
+            verificacao={"motivo": analise.get("motivo")},
+            status_verificacao=_STATUS_VERIFICACAO.get(
+                analise["status"], StatusVerificacao.NAO_EXECUTADA
+            ),
+            tokens_entrada=analise.get("tokens_entrada"),
+            tokens_saida=analise.get("tokens_saida"),
+            latencia_ms=analise.get("latencia_ms"),
+        ))
+    db.commit()
+    return simulacao
+
+
 @router.get("/", response_class=HTMLResponse)
 def formulario(
     request: Request, db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_web),
@@ -139,7 +225,7 @@ def formulario(
     ctx = _contexto_base(db, usuario)
     ctx.update(
         request=request, resultado=None, empresa=None, erro=None, selecionado={},
-        analise=None, contexto_ia=None, grafico_atual_futuro=None, grafico_simples=None,
+        analise=None, simulacao_id=None, grafico_atual_futuro=None, grafico_simples=None,
     )
 
     if _regras_ativa(db) is None:
@@ -173,7 +259,7 @@ def simular(
     }
     ctx.update(
         request=request, resultado=None, empresa=None, erro=None,
-        selecionado=selecionado, analise=None, contexto_ia=None,
+        selecionado=selecionado, analise=None, simulacao_id=None,
         grafico_atual_futuro=None, grafico_simples=None,
     )
 
@@ -241,11 +327,16 @@ def simular(
         ctx["erro"] = f"Não foi possível simular: {exc}"
         return templates.TemplateResponse("index.html", ctx)
 
+    analise = analisar(resultado)
+    simulacao = _salvar_simulacao(
+        db, usuario, empresa, cenario, regras, ano_base, opcao, entrada, resultado, analise,
+    )
+
     ctx["resultado"] = resultado
     ctx["empresa"] = empresa
     ctx["cenario"] = cenario
-    ctx["analise"] = analisar(resultado)
-    ctx["contexto_ia"] = montar_contexto(resultado)
+    ctx["analise"] = analise
+    ctx["simulacao_id"] = simulacao.id
     ctx["grafico_atual_futuro"] = montar_grafico_atual_futuro(resultado)
     ctx["grafico_simples"] = montar_grafico_simples(resultado)
     return templates.TemplateResponse("index.html", ctx)
@@ -261,33 +352,38 @@ class TurnoChat(BaseModel):
 
 
 class PedidoChat(BaseModel):
-    contexto: dict
+    simulacao_id: int
     historico: list[TurnoChat] = []
     pergunta: str
 
 
 @router.post("/chat")
-def chat(pedido: PedidoChat, usuario: Usuario = Depends(usuario_api)) -> dict:
+def chat(
+    pedido: PedidoChat, db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_api),
+) -> dict:
     """
-    JSON, chamado por fetch() do próprio template (ver index.html). O
-    contexto vem de volta do navegador, não é relido do banco — a tela já
-    tinha esses números na hora que a simulação rodou. Isso significa que
-    um usuário autenticado pode adulterar seu próprio `contexto` no
-    devtools e fazer a IA "confirmar" números fabricados na própria tela
-    dele; não expõe dado de outro tenant nem quebra a aplicação (renderizar
-    valida a chave contra o texto gerado, não o contrário). Fechar essa
-    lacuna de vez pede persistir a simulação no banco (Simulacao) e o chat
-    ler o contexto por id, não por payload — fica para quando RF08/RF11
-    entrarem em pauta.
+    JSON, chamado por fetch() do próprio template (ver _resultado.html). O
+    contexto vem de `Simulacao.resultado`, relido do banco por
+    `simulacao_id` — não mais reenviado pelo navegador a cada pergunta.
+    Fecha a lacuna que existia antes de RF08/RF11: um usuário autenticado
+    não pode mais adulterar o contexto no devtools pra fazer a IA
+    "confirmar" números fabricados, porque o servidor nunca confia no que
+    o cliente diz que é o resultado — só no que está salvo.
     """
     pergunta = pedido.pergunta.strip()
     if not pergunta:
         return {"status": "erro", "motivo": "Pergunta vazia.", "texto": None}
-    if not isinstance(pedido.contexto.get("referencias"), dict):
-        return {"status": "erro", "motivo": "Contexto inválido.", "texto": None}
 
+    simulacao = db.get(Simulacao, pedido.simulacao_id)
+    # Mesma régua de /simular e /historico: de outro tenant vira "não achei".
+    if simulacao is not None and not eh_admin(usuario) and simulacao.tenant_id != usuario.tenant_id:
+        simulacao = None
+    if simulacao is None:
+        return {"status": "erro", "motivo": "Simulação não encontrada.", "texto": None}
+
+    contexto = montar_contexto(simulacao.resultado)
     historico = [{"pergunta": t.pergunta, "resposta": t.resposta} for t in pedido.historico]
-    resultado = responder_pergunta(pedido.contexto, historico, pergunta)
+    resultado = responder_pergunta(contexto, historico, pergunta)
     return {
         "status": resultado["status"], "motivo": resultado["motivo"], "texto": resultado["texto"],
     }

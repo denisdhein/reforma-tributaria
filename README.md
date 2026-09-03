@@ -25,7 +25,8 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Cadastro de empresa pela tela (RF01) — empresa, custos, itens | pronto — ver seção Cadastro de empresa |
 | Cenários de alíquota criados pelo usuário ("e se…") | pronto — ver seção Cenários |
 | Gráfico de comparação (RF06) | pronto — ver seção Gráficos |
-| Histórico e persistência da simulação (RF08/RF11), exportação (RF07) | não iniciado |
+| Histórico e persistência da simulação (RF08/RF11) | pronto — ver seção própria |
+| Exportação/impressão do relatório (RF07) | não iniciado |
 
 ## Subindo
 
@@ -117,6 +118,7 @@ app/
     rotas.py               login/logout, GET / (formulário), POST /simular
     empresas.py             cadastro de empresa (RF01) + ajuda da IA
     cenarios.py              cenários de alíquota do usuário ("e se…")
+    historico.py              lista/reabre Simulacao salva (RF08/RF11)
     graficos.py               barras de comparação (RF06), sem lib nova
     uploads.py               salva foto de perfil em disco, nome gerado
     templates/              Jinja2, sem build step, sem JS externo
@@ -140,8 +142,9 @@ Sem SPA, sem HTMX, sem build step: FastAPI + Jinja2 renderizam a página no
 servidor. Decisão consciente — `jinja2` já estava no `requirements.txt` e
 não há tooling de frontend no repositório; para um protótipo acadêmico,
 menos peças móveis pesa mais do que "framework moderno" no currículo da
-tecnologia. Histórico (RF11) e exportação (RF07) ficam para depois.
-Cadastro de empresa pela tela (RF01) — ver seção própria abaixo.
+tecnologia. Exportação (RF07) fica para depois; histórico (RF11) — ver
+seção própria abaixo. Cadastro de empresa pela tela (RF01) — ver seção
+própria abaixo.
 
 **Nota de ambiente**: testado localmente com SQLite (sem Docker/Postgres
 disponíveis na máquina de desenvolvimento), com um pequeno shim que
@@ -305,6 +308,51 @@ com a tabela oficial (LC 123/2006, redação LC 155/2016, em vigor desde
 2018 — a reforma não mexeu nesses percentuais), conferida contra duas
 fontes independentes. Anexo I a V cadastrados hoje.
 
+## Histórico de simulações (RF08/RF11)
+
+`app/models/simulacao.py` (`Simulacao`, `AnaliseIA`) já existia desde o
+início do projeto — modelo pronto, tabela migrada, nada usava. Toda
+`POST /simular` bem sucedida agora grava uma linha ali, sem passo extra de
+"salvar": é histórico automático, não um recurso à parte.
+
+- `_salvar_simulacao()` em `app/web/rotas.py`, chamada logo depois do
+  motor calcular. Congela um snapshot do que entrou (`dados_informados` —
+  a `EntradaSimulacao` inteira, serializada; `cenario_aliquota_snapshot`;
+  `regras_snapshot`) e do que saiu (`resultado`, o dicionário completo do
+  motor) — editar o cenário ou a versão de regras depois não altera
+  retroativamente o que já foi salvo (é a garantia que a própria docstring
+  do modelo já pedia). Desnormaliza `carga_atual_rs`/`carga_futura_rs`/
+  `diferenca_rs`/`diferenca_pct` pra listar sem reabrir o JSON toda vez.
+- Se a análise por IA respondeu (aprovada ou reprovada — `resposta_bruta`
+  não nulo), grava também um `AnaliseIA` ligado 1:1 (prompt enviado,
+  resposta bruta e renderizada, status da verificação, tokens, latência).
+  Quando a IA está indisponível não há o que auditar, então não grava —
+  a tela de histórico mostra "IA não respondeu nesta simulação" nesse caso.
+- `app/web/historico.py`: `GET /historico` lista (tenant-scoped, admin
+  atravessa todos), mais recente primeiro; `GET /historico/{id}` reabre
+  uma simulação salva. As duas telas reusam `app/web/templates/_resultado.html`
+  — o mesmo bloco de resultado que aparece logo depois de `POST /simular`
+  foi extraído da `index.html` pra não duplicar entre "acabei de simular" e
+  "abri uma do histórico".
+- **Fecha também a lacuna de integridade do chat** (documentada há tempo,
+  ver seção "Chat" abaixo): antes, `POST /chat` recebia o contexto de volta
+  do navegador a cada pergunta — um usuário podia adulterar esse JSON no
+  devtools. Agora recebe só `simulacao_id`, relê `Simulacao.resultado` do
+  banco e reconstrói o contexto ali — o servidor nunca mais confia no que o
+  cliente diz que é o resultado.
+- Testado ao vivo: rodou uma simulação, apareceu em `/historico` com os
+  números certos; abriu o detalhe, o gráfico e a análise de IA
+  re-renderizaram a partir do que foi salvo (não recalculados); perguntou
+  algo no chat da tela de histórico e a resposta veio fundamentada nos
+  números daquela simulação salva, sem tocar no motor de novo; id de
+  simulação inexistente ou de outro tenant tratado como "não encontrada",
+  igual à régua já usada em `/simular` e `/empresas`.
+- **O que ficou de fora**: `LogAuditoria` (existe no modelo, não é
+  gravado ainda — não há ainda uma ação sensível o bastante pra justificar
+  auditar, mas fica pronto pro dia que precisar), edição/exclusão de uma
+  simulação salva, e filtro por empresa na listagem do histórico (só
+  ordena por data por enquanto).
+
 ## Autenticação
 
 Login por cookie de sessão (JWT assinado, `argon2-cffi` no hash da senha —
@@ -415,20 +463,18 @@ resposta de chat que é só conceitual ("o que é IBS?"). Testado com
 pergunta simples, pergunta de acompanhamento usando o histórico da
 conversa, e sem login (401).
 
-**Contexto sem persistência, de propósito e com uma ressalva:** a tela
-embute `resultado["referencias"]` num `<script type="application/json">`
-e o navegador reenvia esse mesmo contexto a cada pergunta — não existe
-ainda uma `Simulacao` salva no banco para o chat ler por id. Isso significa
-que um usuário autenticado pode adulterar seu próprio contexto no devtools
-e fazer a IA "confirmar" números fabricados só na tela dele — não expõe
-dado de outro tenant, não quebra a aplicação, mas é uma lacuna de
-integridade real. Fechar de vez pede persistir a simulação (RF08/RF11).
+**Contexto lido do banco por id (fechado em 03/09/2026, ver RF08/RF11
+abaixo):** `POST /chat` recebe `simulacao_id`, relê `Simulacao.resultado`
+do banco e reconstrói o contexto ali — o navegador não reenvia mais o JSON
+a cada pergunta. Antes disso, a tela embutia `resultado["referencias"]` num
+`<script type="application/json">` e o cliente reenviava esse mesmo bloco;
+um usuário autenticado podia adulterar esse contexto no devtools e fazer a
+IA "confirmar" números fabricados só na própria tela dele. Não expunha dado
+de outro tenant nem quebrava a aplicação, mas era uma lacuna de integridade
+real — fechada junto com a persistência da simulação, que é exatamente o
+que criou o "id" pelo qual reler.
 
-**O que não está feito**: nada é salvo em `AnaliseIA`/`Simulacao` ainda —
-o modelo já existe (`app/models/simulacao.py`) para isso, mas persistir
-cada chamada (prompt, resposta, verificação, custo) fica para quando RF08
-completo entrar em pauta — e resolveria também a ressalva do parágrafo
-acima. A verificação de "coerência de direção" e de "certeza jurídica" é
+A verificação de "coerência de direção" e de "certeza jurídica" continua
 heurística por palavra-chave, não NLU — pega o grosseiro, não substitui
 leitura humana da resposta antes de usar em produção.
 

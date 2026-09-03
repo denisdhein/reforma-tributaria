@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Simulação #{{ simulacao.id }} · Reforma Tributária{% endblock %}
+
+{% block conteudo %}
+
+<p><a class="botao-link" href="/historico">← Voltar ao histórico</a></p>
+
+{% include "_resultado.html" %}
+
+{% endblock %}
