@@ -228,6 +228,27 @@ def test_primeira_faixa_efetiva_igual_nominal():
     assert efetiva == D("0.040000")
 
 
+def test_aliquota_efetiva_anexo_ii_faixa_3_confere_na_mao():
+    """Indústria: (500.000 * 10,00% - 13.860) / 500.000 = 7,228%"""
+    efetiva, faixa = aliquota_efetiva(D("500000"), P["simples"]["anexos"]["2"])
+    assert faixa["faixa"] == 3
+    assert efetiva == D("0.072280")
+
+
+def test_aliquota_efetiva_anexo_iv_faixa_3_confere_na_mao():
+    """Serviços sem CPP: (500.000 * 10,20% - 12.420) / 500.000 = 7,716%"""
+    efetiva, faixa = aliquota_efetiva(D("500000"), P["simples"]["anexos"]["4"])
+    assert faixa["faixa"] == 3
+    assert efetiva == D("0.077160")
+
+
+def test_aliquota_efetiva_anexo_v_faixa_3_confere_na_mao():
+    """Fator R: (500.000 * 19,50% - 9.900) / 500.000 = 17,520%"""
+    efetiva, faixa = aliquota_efetiva(D("500000"), P["simples"]["anexos"]["5"])
+    assert faixa["faixa"] == 3
+    assert efetiva == D("0.175200")
+
+
 def test_acima_do_limite_do_simples_falha():
     with pytest.raises(ForaDoSimples, match="acima do limite"):
         aliquota_efetiva(D("5000000"), P["simples"]["anexos"]["1"])
@@ -235,7 +256,7 @@ def test_acima_do_limite_do_simples_falha():
 
 def test_anexo_nao_parametrizado_falha():
     with pytest.raises(ForaDoSimples, match="não parametrizado"):
-        aliquota_efetiva(D("300000"), P["simples"]["anexos"]["2"])
+        aliquota_efetiva(D("300000"), [])
 
 
 def empresa_simples(**kw):

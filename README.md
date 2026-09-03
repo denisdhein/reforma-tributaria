@@ -16,7 +16,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Parâmetros versionados e cenários de alíquota | pronto |
 | Seed com empresas fictícias | pronto |
 | Rotas de leitura | pronto |
-| Motor de cálculo | pronto (38 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
+| Motor de cálculo | pronto (41 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
 | Simples: único vs. híbrido | pronto (motor) |
 | Interface web — rodar simulação e ver resultado | pronto (`/`, server-rendered) |
 | Login e multi-tenant (empresa/escritório, admin) | pronto — ver seção Autenticação |
@@ -296,13 +296,14 @@ Preencheu os campos → vale mais que o `<select>`; deixou em branco → volta
 pro fluxo normal do cenário escolhido. Continua aparecendo depois na lista
 de Cenários, com o mesmo selo "hipótese sua".
 
-**Mensagem de erro melhorada (achado testando com usuário real):** simular
-uma empresa do Simples com Anexo II, IV ou V dava
-`ForaDoSimples("Anexo não parametrizado nesta versão de regras.")` —
-correto, mas confuso pra quem não é do time. `POST /simular`
-(`app/web/rotas.py`) agora pega esse erro específico antes do `ValueError`
-genérico e explica em português claro que só os Anexos I e III têm tabela
-cadastrada hoje, e o que fazer a respeito.
+**Anexos II, IV e V completados (antes vazios).** Simular uma empresa do
+Simples com Anexo II, IV ou V dava
+`ForaDoSimples("Anexo não parametrizado nesta versão de regras.")` — os
+dois anexos tinham tabela (I e III), os outros três estavam vazios de
+propósito no seed inicial. Preenchidos em `app/seeds/regras_iniciais.py`
+com a tabela oficial (LC 123/2006, redação LC 155/2016, em vigor desde
+2018 — a reforma não mexeu nesses percentuais), conferida contra duas
+fontes independentes. Anexo I a V cadastrados hoje.
 
 ## Autenticação
 
@@ -466,7 +467,8 @@ Ver o cabeçalho de `app/seeds/regras_iniciais.py`. Resumo:
   nas regras: vivem em `CenarioAliquota`, trocáveis sem tocar no código.
   Dois cenários carregados: trava legal de 26,5% (LC 214/2025, art. 475, §11)
   e estimativa CGIBS de 27,91% (Resolução 14, de 29/07/2026).
-- **Anexos II, IV e V do Simples** — vazios, a preencher.
+- **Anexos I a V do Simples** — completos (LC 123/2006, redação LC 155/2016,
+  em vigor desde 01/01/2018; a reforma não alterou esses percentuais).
 - **`pct_ibs_cbs_no_das`** — fictício, valores de trabalho.
 - **Imposto Seletivo** — desligado. Alíquotas dependem de lei ainda não aprovada.
 
@@ -483,7 +485,7 @@ identificadores estáveis que a camada de IA vai referenciar.
 
 ## Motor de cálculo — estado
 
-Implementado e com 38 testes passando (`pytest tests/`). Cobre: cenário atual
+Implementado e com 41 testes passando (`pytest tests/`). Cobre: cenário atual
 a plena carga como baseline fixo, transição ano a ano de 2026 a 2033 somando
 resíduo dos tributos antigos com IBS/CBS, cálculo item a item com queda para
 agregado, regimes diferenciados por item, crédito amplo com redução para

@@ -34,7 +34,6 @@ from app.models import (
     CenarioAliquota, Empresa, OpcaoSimplesIBSCBS, PapelUsuario, RegrasVersao, TipoCenario,
     Usuario,
 )
-from app.motor.simples import ForaDoSimples
 from app.motor import calcular
 from app.web.adaptador import montar_entrada
 from app.web.graficos import montar_grafico_atual_futuro, montar_grafico_simples
@@ -236,18 +235,9 @@ def simular(
             entrada, ano_base, cenario.aliquota_ibs, cenario.aliquota_cbs,
             regras.parametros, opcao_simples=opcao,
         )
-    except ForaDoSimples:
-        # Mensagem própria: "Anexo não parametrizado nesta versão de
-        # regras" (erro cru do motor) confundiu um usuário de verdade —
-        # só os anexos I e III têm tabela de faixas cadastrada hoje.
-        ctx["erro"] = (
-            f"Não foi possível simular: o Anexo {entrada.simples_anexo} do Simples ainda não "
-            "tem tabela de alíquotas cadastrada neste sistema — só os Anexos I e III têm hoje. "
-            "Recadastre a empresa com um desses dois anexos, ou peça para o administrador "
-            "completar os demais."
-        )
-        return templates.TemplateResponse("index.html", ctx)
     except ValueError as exc:
+        # ForaDoSimples (RBT12 fora da faixa, anexo sem tabela) é um
+        # ValueError — mensagem do motor já é clara o bastante pra tela.
         ctx["erro"] = f"Não foi possível simular: {exc}"
         return templates.TemplateResponse("index.html", ctx)
 
