@@ -27,6 +27,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Gráfico de comparação (RF06) | pronto — ver seção Gráficos |
 | Histórico e persistência da simulação (RF08/RF11) | pronto — ver seção própria |
 | Exportação/impressão do relatório (RF07) | pronto — ver seção própria |
+| Repetir simulação com parâmetros alterados (RF10) | pronto — ver seção Histórico |
 
 ## Subindo
 
@@ -308,7 +309,7 @@ com a tabela oficial (LC 123/2006, redação LC 155/2016, em vigor desde
 2018 — a reforma não mexeu nesses percentuais), conferida contra duas
 fontes independentes. Anexo I a V cadastrados hoje.
 
-## Histórico de simulações (RF08/RF11)
+## Histórico de simulações (RF08/RF10/RF11)
 
 `app/models/simulacao.py` (`Simulacao`, `AnaliseIA`) já existia desde o
 início do projeto — modelo pronto, tabela migrada, nada usava. Toda
@@ -347,6 +348,16 @@ início do projeto — modelo pronto, tabela migrada, nada usava. Toda
   números daquela simulação salva, sem tocar no motor de novo; id de
   simulação inexistente ou de outro tenant tratado como "não encontrada",
   igual à régua já usada em `/simular` e `/empresas`.
+- **RF10 — repetir simulação com parâmetros alterados**: botão "Simular
+  novamente (editar parâmetros)" em `/historico/{id}`, leva pra
+  `/?repetir={id}`. `GET /` pré-preenche `empresa_id`, `ano_base`,
+  `opcao_simples` e o cenário — usa o cenário ao vivo se ele ainda existir e
+  estiver ativo, senão reconstrói `ibs_personalizado`/`cbs_personalizado` a
+  partir do `cenario_aliquota_snapshot` congelado (o cenário original pode
+  ter sido desativado ou excluído depois; o snapshot nunca muda). Reusa o
+  mesmo mecanismo de repopulação de formulário que já existia pra reexibir
+  erro de validação — não é campo novo, é o `selecionado` de sempre
+  alimentado por uma fonte diferente.
 - **O que ficou de fora**: `LogAuditoria` (existe no modelo, não é
   gravado ainda — não há ainda uma ação sensível o bastante pra justificar
   auditar, mas fica pronto pro dia que precisar), edição/exclusão de uma
