@@ -96,17 +96,19 @@ def calcular_creditos(
     Folha não gera crédito. Fornecedor do Simples em regime único gera
     crédito reduzido.
 
-    `pct_imposto_embutido_custos` desconta do custo a fração que já é
+    `pct_imposto_embutido` (por linha de CustoEntrada, calibração 2 opção
+    A) ou `entrada.pct_imposto_embutido_custos` (padrão da empresa, quando
+    a linha não informa o próprio) desconta do custo a fração que já é
     imposto ATUAL embutido no preço do fornecedor, antes de aplicar a
     alíquota NOVA — sem isso, credita-se IBS/CBS em cima de um valor que
     ainda carrega ICMS/PIS/COFINS antigo, superestimando o crédito
-    (calibração 2 do motor, ver README). Zero/não informado preserva o
+    (ver README). Zero/não informado nos dois níveis preserva o
     comportamento anterior a este parâmetro.
     """
     f_ibs = D(str(fracoes_ano.get("ibs", 0)))
     f_cbs = D(str(fracoes_ano.get("cbs", 0)))
     aliq_total = aliq_ibs * f_ibs + aliq_cbs * f_cbs
-    fator_liquido = D("1") - D(entrada.pct_imposto_embutido_custos or 0)
+    padrao_empresa = D(entrada.pct_imposto_embutido_custos or 0)
 
     total = ZERO
     detalhe: list[dict] = []
@@ -121,6 +123,11 @@ def calcular_creditos(
             })
             continue
 
+        pct_embutido = (
+            D(custo.pct_imposto_embutido) if custo.pct_imposto_embutido is not None
+            else padrao_empresa
+        )
+        fator_liquido = D("1") - pct_embutido
         base = D(custo.valor_anual) * fator_liquido
         p_simples = D(custo.pct_fornecedor_simples or 0)
 
@@ -133,6 +140,7 @@ def calcular_creditos(
             "origem": custo.origem,
             "valor_rs": str(dinheiro(D(custo.valor_anual))),
             "pct_fornecedor_simples": str(p_simples),
+            "pct_imposto_embutido_aplicado": str(pct_embutido),
             "credito_rs": str(dinheiro(credito)),
         })
 

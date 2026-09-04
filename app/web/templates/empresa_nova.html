@@ -160,26 +160,31 @@
     <p class="rodape-meta">De onde vêm os custos — decide o crédito no cenário atual e no pós-reforma.</p>
 
     <div class="campo" style="max-width: 420px;">
-      <label for="pct_imposto_embutido_custos">% médio de imposto já embutido nos custos (sistema novo)</label>
+      <label for="pct_imposto_embutido_custos">% padrão de imposto já embutido nos custos (sistema novo)</label>
       <input
         type="text" id="pct_imposto_embutido_custos" name="pct_imposto_embutido_custos"
         value="{{ valores.get('pct_imposto_embutido_custos','') }}" placeholder="Deixe em branco se não souber"
       >
       <p class="rodape-meta">
-        Estimativa de quanto dos valores abaixo já é ICMS/PIS/COFINS do fornecedor embutido no
-        preço. Usada só no crédito do IBS/CBS (sistema novo) — sem isso, o crédito é calculado
-        em cima do valor cheio do custo, o que pode superestimar o crédito. Se não souber, deixe
-        em branco (assume 0%, mesmo comportamento de antes deste campo existir).
+        Estimativa de quanto dos custos já é ICMS/PIS/COFINS do fornecedor embutido no preço.
+        Usada só no crédito do IBS/CBS (sistema novo) — sem isso, o crédito é calculado em cima
+        do valor cheio do custo, o que pode superestimar o crédito. Vale como padrão pras linhas
+        abaixo que não têm o próprio "% embutido"; se uma linha específica informar o dela, o da
+        linha vale mais (mais preciso — nem todo fornecedor embute o mesmo tanto de imposto). Se
+        não souber nenhum dos dois, deixe em branco (assume 0%).
       </p>
     </div>
 
     <div style="overflow-x: auto;">
     <table>
       <thead>
-        <tr><th>Origem</th><th>Valor anual (R$)</th><th>% fornecedor Simples</th><th>Gera crédito hoje?</th><th></th></tr>
+        <tr>
+          <th>Origem</th><th>Valor anual (R$)</th><th>% fornecedor Simples</th>
+          <th>Gera crédito hoje?</th><th>% embutido (esta linha)</th><th></th>
+        </tr>
       </thead>
       <tbody id="corpo-custos">
-        {% for origem, valor, pct_simples, credito in custos %}
+        {% for origem, valor, pct_simples, credito, pct_embutido in custos %}
         <tr class="linha-custo">
           <td>
             <select name="custo_origem">
@@ -196,6 +201,7 @@
               <option value="sim" {% if credito == 'sim' %}selected{% endif %}>Sim</option>
             </select>
           </td>
+          <td><input type="text" name="custo_pct_imposto_embutido" value="{{ pct_embutido }}" placeholder="usa o padrão"></td>
           <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
         </tr>
         {% endfor %}
@@ -218,6 +224,7 @@
             <option value="sim">Sim</option>
           </select>
         </td>
+        <td><input type="text" name="custo_pct_imposto_embutido" placeholder="usa o padrão"></td>
         <td><button type="button" class="botao-secundario remover-linha">Remover</button></td>
       </tr>
     </template>

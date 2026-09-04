@@ -46,6 +46,7 @@ def montar_entrada(empresa: Empresa) -> EntradaSimulacao:
             valor_anual=c.valor_anual,
             pct_fornecedor_simples=c.pct_fornecedor_simples,
             gera_credito_hoje=c.gera_credito_hoje,
+            pct_imposto_embutido=c.pct_imposto_embutido,
         )
         for c in empresa.custos
     ]

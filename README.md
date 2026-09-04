@@ -16,7 +16,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Parâmetros versionados e cenários de alíquota | pronto |
 | Seed com empresas fictícias | pronto |
 | Rotas de leitura | pronto |
-| Motor de cálculo | pronto (41 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
+| Motor de cálculo | pronto (44 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
 | Simples: único vs. híbrido | pronto (motor) |
 | Interface web — rodar simulação e ver resultado | pronto (`/`, server-rendered) |
 | Login e multi-tenant (empresa/escritório, admin) | pronto — ver seção Autenticação |
@@ -571,7 +571,7 @@ identificadores estáveis que a camada de IA vai referenciar.
 
 ## Motor de cálculo — estado
 
-Implementado e com 41 testes passando (`pytest tests/`). Cobre: cenário atual
+Implementado e com 44 testes passando (`pytest tests/`). Cobre: cenário atual
 a plena carga como baseline fixo, transição ano a ano de 2026 a 2033 somando
 resíduo dos tributos antigos com IBS/CBS, cálculo item a item com queda para
 agregado, regimes diferenciados por item, crédito amplo com redução para
@@ -639,10 +639,23 @@ usada ("Crédito de IBS/CBS sobre custos descontado em 20,00%..."). Campo de
 formulário em "Custos e despesas" no cadastro de empresa, com texto de ajuda
 explicando o que é — deixado em branco assume 0% (nenhuma mudança).
 
-**Ressalva que continua valendo**: é uma média por empresa, não por
-fornecedor — dois fornecedores diferentes podem ter composição tributária
-bem diferente, e o motor não distingue. Resolver isso por completo pede a
-opção A (campo por linha), que ficou de fora por ora.
+**Opção A implementada também (04/09/2026), como refinamento sobre a C —
+não uma troca.** A ressalva acima ("é uma média por empresa, não por
+fornecedor") motivou pedir a opção A depois: `CustoEmpresa.pct_imposto_embutido`
+(migration `111b3c1a8e87`), um valor por linha de custo que sobrepõe o
+padrão da empresa quando informado — mesma regra de override que
+`ItemEmpresa` já usa pras alíquotas (`app/web/adaptador.py:_aliq_item`).
+Linha sem valor próprio cai no padrão da empresa; empresa sem padrão e
+linha sem valor mantém o comportamento de sempre (0%, sem desconto). As
+duas opções coexistem por design — C nunca deixou de existir, virou o
+"senão" da A. `_limitacao_imposto_embutido()` em `app/motor/calculadora.py`
+relata o que foi efetivamente usado: só padrão, só por linha, misto, ou
+nenhum desconto — não dá pra resumir num único percentual quando os custos
+usam fontes diferentes. Testado com números exatos (3 testes novos,
+`test_pct_imposto_embutido_por_linha_*`) e ao vivo contra a Metalúrgica do
+seed: sobrepor uma linha de 14,5 milhões (padrão 20%) pra 30% reduziu o
+crédito daquela linha especificamente, sem afetar as outras — a limitação
+passou a mostrar "1 de 3 linha(s) com valor próprio".
 
 **3. `fator_credito_fornecedor_simples` — base legal encontrada
 (02/09/2026), número ainda não corrigido.** Pesquisa (várias buscas e

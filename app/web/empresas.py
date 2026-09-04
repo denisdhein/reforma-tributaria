@@ -117,7 +117,7 @@ def _validar_e_montar(
     pct_consumidor_final: str, margem_bruta: str, margem_liquida: str, aliq_icms: str,
     aliq_iss: str, aliq_pis: str, aliq_cofins: str, aliq_ipi: str,
     pct_compras_com_credito: str, pct_imposto_embutido_custos: str, observacoes: str,
-    custos: list[tuple[str, str, str, str]], itens: list[tuple[str, str, str, str]],
+    custos: list[tuple[str, str, str, str, str]], itens: list[tuple[str, str, str, str]],
 ) -> tuple[dict, list[dict], list[dict]]:
     """Levanta ErroValidacao/ValueError com mensagem pronta pra tela se algo
     não bater; devolve (campos_da_empresa, linhas_custo, linhas_item) prontos
@@ -168,7 +168,7 @@ def _validar_e_montar(
     )
 
     linhas_custo = []
-    for origem, valor, pct_simples, credito in custos:
+    for origem, valor, pct_simples, credito, pct_embutido in custos:
         if not valor.strip():
             continue
         valor_dec = _decimal(valor, "Valor do custo")
@@ -179,6 +179,7 @@ def _validar_e_montar(
             valor_anual=valor_dec,
             pct_fornecedor_simples=(_fracao(pct_simples, "% fornecedor Simples") or D("0")),
             gera_credito_hoje=(credito == "sim"),
+            pct_imposto_embutido=_fracao(pct_embutido, "% de imposto já embutido (linha de custo)"),
         ))
 
     linhas_item = []
@@ -279,6 +280,7 @@ def criar_empresa(
     custo_valor_anual: list[str] = Form([]),
     custo_pct_fornecedor_simples: list[str] = Form([]),
     custo_gera_credito: list[str] = Form([]),
+    custo_pct_imposto_embutido: list[str] = Form([]),
     item_descricao: list[str] = Form([]),
     item_pct_faturamento: list[str] = Form([]),
     item_regime_diferenciado: list[str] = Form([]),
@@ -298,7 +300,10 @@ def criar_empresa(
         pct_compras_com_credito=pct_compras_com_credito,
         pct_imposto_embutido_custos=pct_imposto_embutido_custos, observacoes=observacoes,
     )
-    custos = list(zip(custo_origem, custo_valor_anual, custo_pct_fornecedor_simples, custo_gera_credito))
+    custos = list(zip(
+        custo_origem, custo_valor_anual, custo_pct_fornecedor_simples, custo_gera_credito,
+        custo_pct_imposto_embutido,
+    ))
     itens = list(zip(item_descricao, item_pct_faturamento, item_regime_diferenciado, item_sujeito_seletivo))
 
     try:
@@ -374,7 +379,7 @@ def form_editar_empresa(
     )
     custos = [
         (c.origem.value, format(c.valor_anual, "f"), _pct_str(c.pct_fornecedor_simples),
-         "sim" if c.gera_credito_hoje else "nao")
+         "sim" if c.gera_credito_hoje else "nao", _pct_str(c.pct_imposto_embutido))
         for c in empresa.custos
     ]
     itens = [
@@ -422,6 +427,7 @@ def editar_empresa(
     custo_valor_anual: list[str] = Form([]),
     custo_pct_fornecedor_simples: list[str] = Form([]),
     custo_gera_credito: list[str] = Form([]),
+    custo_pct_imposto_embutido: list[str] = Form([]),
     item_descricao: list[str] = Form([]),
     item_pct_faturamento: list[str] = Form([]),
     item_regime_diferenciado: list[str] = Form([]),
@@ -447,7 +453,10 @@ def editar_empresa(
         pct_compras_com_credito=pct_compras_com_credito,
         pct_imposto_embutido_custos=pct_imposto_embutido_custos, observacoes=observacoes,
     )
-    custos = list(zip(custo_origem, custo_valor_anual, custo_pct_fornecedor_simples, custo_gera_credito))
+    custos = list(zip(
+        custo_origem, custo_valor_anual, custo_pct_fornecedor_simples, custo_gera_credito,
+        custo_pct_imposto_embutido,
+    ))
     itens = list(zip(item_descricao, item_pct_faturamento, item_regime_diferenciado, item_sujeito_seletivo))
 
     try:

@@ -36,6 +36,10 @@ class CustoEntrada:
     valor_anual: Decimal
     pct_fornecedor_simples: Decimal = ZERO
     gera_credito_hoje: bool = False
+    # Fração deste custo já composta de imposto ATUAL embutido no preço do
+    # fornecedor. Nulo = usa EntradaSimulacao.pct_imposto_embutido_custos
+    # (padrão da empresa) — calibração 2, opção A: crédito por linha.
+    pct_imposto_embutido: Decimal | None = None
 
 
 @dataclass(frozen=True)
