@@ -176,6 +176,44 @@ def test_simples_hibrido_tambem_desconta_imposto_embutido():
     assert r["simples"]["hibrido"]["creditos_rs"] == "468888.00"
 
 
+def test_pct_imposto_embutido_por_linha_sobrepoe_padrao_da_empresa():
+    """
+    Calibração 2, opção A: valor por linha de custo vale mais que o padrão
+    da empresa. 400.000 * (1 - 50%) * 27,91% = 55.820,00 (não os 89.312,00
+    que o padrão de 20% da empresa daria).
+    """
+    e = empresa_real(
+        pct_imposto_embutido_custos=D("0.20"),
+        custos=[CustoEntrada("insumos", D("400000.00"), D("0"), True, D("0.50"))],
+    )
+    r = calcular(e, 2033, IBS, CBS, P)
+    assert r["futuro"]["creditos_rs"] == "55820.00"
+
+
+def test_pct_imposto_embutido_por_linha_funciona_sem_padrao_da_empresa():
+    """Mesmo sem pct_imposto_embutido_custos na empresa, o valor por linha vale."""
+    e = empresa_real(custos=[CustoEntrada("insumos", D("400000.00"), D("0"), True, D("0.50"))])
+    r = calcular(e, 2033, IBS, CBS, P)
+    assert r["futuro"]["creditos_rs"] == "55820.00"
+
+
+def test_pct_imposto_embutido_misto_por_linha_e_padrao_da_empresa():
+    """
+    Uma linha com valor próprio, outra caindo no padrão da empresa —
+    27.910,00 (linha com 50%) + 44.656,00 (linha sem valor, usa 20% da
+    empresa) = 72.566,00.
+    """
+    e = empresa_real(
+        pct_imposto_embutido_custos=D("0.20"),
+        custos=[
+            CustoEntrada("insumos", D("200000.00"), D("0"), True, D("0.50")),
+            CustoEntrada("aluguel", D("200000.00"), D("0"), True),
+        ],
+    )
+    r = calcular(e, 2033, IBS, CBS, P)
+    assert r["futuro"]["creditos_rs"] == "72566.00"
+
+
 def test_folha_nao_gera_credito():
     e = empresa_real(custos=[CustoEntrada("folha", D("500000.00"), D("0"), False)])
     r = calcular(e, 2033, IBS, CBS, P)

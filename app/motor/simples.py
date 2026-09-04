@@ -94,13 +94,16 @@ def calcular(
         receita_liquida = dinheiro(receita - das)
         aliq_total = aliq_ibs * f_ibs + aliq_cbs * f_cbs
         ibs_cbs_por_fora = dinheiro(receita_liquida * aliq_total)
-        # Mesmo desconto de imposto atual embutido usado em futuro.py —
-        # sem isso credita IBS/CBS em cima de um custo que ainda carrega
-        # ICMS/PIS/COFINS antigo (calibração 2 do motor, ver README).
-        fator_liquido = D("1") - D(entrada.pct_imposto_embutido_custos or 0)
+        # Mesmo desconto de imposto atual embutido usado em futuro.py — por
+        # linha de custo quando informado (calibração 2, opção A), senão o
+        # padrão da empresa. Sem isso credita IBS/CBS em cima de um custo
+        # que ainda carrega ICMS/PIS/COFINS antigo (ver README).
+        padrao_empresa = D(entrada.pct_imposto_embutido_custos or 0)
         creditos = dinheiro(
             sum(
-                D(c.valor_anual) * fator_liquido * aliq_total
+                D(c.valor_anual)
+                * (D("1") - (D(c.pct_imposto_embutido) if c.pct_imposto_embutido is not None else padrao_empresa))
+                * aliq_total
                 for c in entrada.custos
                 if c.origem != "folha"
             )

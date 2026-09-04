@@ -64,9 +64,7 @@ def _direcao(diferenca: Decimal) -> str:
     return "neutro"
 
 
-def _limitacoes(
-    parametros: dict, modo: str, regime: str, pct_imposto_embutido: Decimal | None,
-) -> list[str]:
+def _limitacoes(parametros: dict, modo: str, entrada: EntradaSimulacao) -> list[str]:
     lim = [
         "O cenário atual é o sistema vigente a plena carga, usado como "
         "referência fixa. O cenário do ano simulado soma o resíduo dos "
@@ -85,7 +83,7 @@ def _limitacoes(
             "agregado, com as alíquotas médias da empresa. O detalhamento por "
             "produto não está disponível nesta simulação."
         )
-    if regime == "simples":
+    if entrada.regime == "simples":
         nao_impl = parametros.get("simples", {}).get("nao_implementado", [])
         if nao_impl:
             lim.append(
@@ -96,20 +94,53 @@ def _limitacoes(
             "Imposto Seletivo desabilitado: alíquotas dependem de lei ainda não "
             "aprovada."
         )
-    if pct_imposto_embutido:
-        lim.append(
-            f"Crédito de IBS/CBS sobre custos descontado em "
-            f"{pct_imposto_embutido * D('100'):.2f}% (estimativa informada de imposto atual "
-            "já embutido no preço do fornecedor)."
-        )
-    else:
-        lim.append(
-            "Crédito de IBS/CBS calculado sobre o valor cheio dos custos informados, sem "
-            "descontar imposto atual eventualmente já embutido no preço do fornecedor — pode "
-            "superestimar o crédito. Informe \"% de imposto já embutido nos custos\" no "
-            "cadastro da empresa para corrigir."
-        )
+    lim.append(_limitacao_imposto_embutido(entrada))
     return lim
+
+
+def _limitacao_imposto_embutido(entrada: EntradaSimulacao) -> str:
+    """
+    Calibração 2 (opção A): cada CustoEntrada pode informar o próprio
+    `pct_imposto_embutido`, sobrepondo o padrão da empresa
+    (`pct_imposto_embutido_custos`) — mesma regra de override que
+    ItemEntrada já usa pras alíquotas. A limitação relata o que foi
+    efetivamente usado: por linha, por padrão da empresa, misto, ou
+    nenhum desconto (comportamento anterior a esse parâmetro existir).
+    """
+    padrao = D(entrada.pct_imposto_embutido_custos or 0)
+    creditaveis = [c for c in entrada.custos if c.origem != "folha"]
+    com_valor_proprio = sum(1 for c in creditaveis if c.pct_imposto_embutido is not None)
+
+    if not creditaveis:
+        return (
+            "Crédito de IBS/CBS calculado sobre o valor cheio dos custos informados, sem "
+            "descontar imposto atual eventualmente já embutido no preço do fornecedor."
+        )
+    if com_valor_proprio == len(creditaveis):
+        return (
+            "Crédito de IBS/CBS sobre custos descontado individualmente por linha de custo "
+            "(cada uma informa quanto do próprio valor já é imposto atual embutido no preço "
+            "do fornecedor)."
+        )
+    if com_valor_proprio:
+        padrao_txt = f"{padrao * D('100'):.2f}%" if padrao else "sem desconto"
+        return (
+            f"Crédito de IBS/CBS sobre custos descontado de forma mista: "
+            f"{com_valor_proprio} de {len(creditaveis)} linha(s) com valor próprio; as "
+            f"demais usam o padrão da empresa ({padrao_txt})."
+        )
+    if padrao:
+        return (
+            f"Crédito de IBS/CBS sobre custos descontado em {padrao * D('100'):.2f}% "
+            "(padrão informado no cadastro da empresa, nenhuma linha de custo tem valor "
+            "próprio)."
+        )
+    return (
+        "Crédito de IBS/CBS calculado sobre o valor cheio dos custos informados, sem "
+        "descontar imposto atual eventualmente já embutido no preço do fornecedor — pode "
+        "superestimar o crédito. Informe o \"% de imposto já embutido\" por linha de custo "
+        "ou um padrão no cadastro da empresa para corrigir."
+    )
 
 
 def _referencias(resultado: dict) -> dict:
@@ -245,9 +276,7 @@ def calcular(
         "futuro": res_futuro,
         "comparacao": comparacao,
         "simples": res_simples,
-        "limitacoes": _limitacoes(
-            parametros, modo, entrada.regime, entrada.pct_imposto_embutido_custos,
-        ),
+        "limitacoes": _limitacoes(parametros, modo, entrada),
     }
     resultado["referencias"] = _referencias(resultado)
     return resultado

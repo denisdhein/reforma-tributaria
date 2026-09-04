@@ -75,8 +75,10 @@ class Empresa(Base):
     # sistema NOVO (IBS/CBS), pra não creditar imposto novo em cima de
     # imposto antigo que ainda está no preço. Nula/zero = assume que o
     # custo informado já é líquido (comportamento anterior a esta coluna).
-    # Amortecedor único por empresa, mesmo padrão de pct_compras_com_credito
-    # — não é por linha de custo, calibração 2 do motor (ver README).
+    # Padrão da empresa — vale só pras linhas de CustoEmpresa que não
+    # informam o próprio pct_imposto_embutido (calibração 2, opção A do
+    # motor, ver README): antes era o único jeito de informar isso, agora
+    # é o "senão" de um valor mais preciso por linha.
     pct_imposto_embutido_custos: Mapped[Decimal | None] = mapped_column(Numeric(9, 6))
 
     beneficios_fiscais: Mapped[dict | None] = mapped_column(JSONType)
@@ -111,6 +113,14 @@ class CustoEmpresa(Base):
     # Limita o crédito aproveitável pelo adquirente no cenário pós-reforma.
     pct_fornecedor_simples: Mapped[Decimal] = mapped_column(Numeric(9, 6), default=0)
     gera_credito_hoje: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Fração deste custo específico que já é imposto atual embutido no
+    # preço do fornecedor — sobrepõe Empresa.pct_imposto_embutido_custos
+    # quando informado (mesma regra de override que ItemEmpresa já usa
+    # pras alíquotas). Nulo = usa o padrão da empresa. Calibração 2, opção
+    # A do motor: crédito por linha de custo, mais preciso que uma média
+    # única — ver README "Calibrações do motor".
+    pct_imposto_embutido: Mapped[Decimal | None] = mapped_column(Numeric(9, 6))
 
     empresa: Mapped[Empresa] = relationship(back_populates="custos")
 
