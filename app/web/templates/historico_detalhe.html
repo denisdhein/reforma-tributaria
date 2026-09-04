@@ -3,7 +3,10 @@
 
 {% block conteudo %}
 
-<p class="no-imprimir"><a class="botao-link" href="/historico">← Voltar ao histórico</a></p>
+<p class="no-imprimir">
+  <a class="botao-link" href="/historico">← Voltar ao histórico</a>
+  <a class="botao-secundario" href="/?repetir={{ simulacao.id }}">Simular novamente (editar parâmetros)</a>
+</p>
 
 {% include "_resultado.html" %}
 

@@ -29,7 +29,7 @@ from app.auth.dependencias import eh_admin, usuario_api, usuario_web
 from app.auth.seguranca import EXPIRA_HORAS, NOME_COOKIE, criar_token, verificar_senha
 from app.config import settings
 from app.db import get_db
-from app.formatacao import fracao_validada, moeda, pctfmt
+from app.formatacao import fracao_validada, moeda, numero, pctfmt
 from app.ia.prompt import montar_contexto
 from app.ia.servico import analisar, responder_pergunta
 from app.models import (
@@ -218,13 +218,44 @@ def _salvar_simulacao(
     return simulacao
 
 
+def _selecionado_de_simulacao(db: Session, usuario: Usuario, simulacao_id: int) -> dict:
+    """RF10 — pré-preenche o formulário a partir de uma simulação salva, pra
+    "repetir com parâmetros alterados" não exigir digitar tudo de novo.
+    Prioriza o cenário ao vivo se ele ainda existir/estiver ativo; senão
+    reconstrói IBS/CBS do snapshot congelado (cenário pode ter sido
+    desativado ou excluído depois — o snapshot nunca muda)."""
+    simulacao = db.get(Simulacao, simulacao_id)
+    if simulacao is None or (not eh_admin(usuario) and simulacao.tenant_id != usuario.tenant_id):
+        return {}
+
+    selecionado = {
+        "empresa_id": simulacao.empresa_id,
+        "ano_base": simulacao.ano_base,
+        "opcao_simples": simulacao.opcao_simples.value if simulacao.opcao_simples else "",
+    }
+    cenario_vivo = (
+        db.get(CenarioAliquota, simulacao.cenario_aliquota_id)
+        if simulacao.cenario_aliquota_id else None
+    )
+    if cenario_vivo is not None and cenario_vivo.ativo:
+        selecionado["cenario_id"] = cenario_vivo.id
+    else:
+        snap = simulacao.cenario_aliquota_snapshot or {}
+        if "aliquota_ibs" in snap and "aliquota_cbs" in snap:
+            selecionado["ibs_personalizado"] = numero(Decimal(snap["aliquota_ibs"]) * 100, 2)
+            selecionado["cbs_personalizado"] = numero(Decimal(snap["aliquota_cbs"]) * 100, 2)
+    return selecionado
+
+
 @router.get("/", response_class=HTMLResponse)
 def formulario(
-    request: Request, db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_web),
+    request: Request, repetir: int | None = None,
+    db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_web),
 ) -> HTMLResponse:
     ctx = _contexto_base(db, usuario)
+    selecionado = _selecionado_de_simulacao(db, usuario, repetir) if repetir is not None else {}
     ctx.update(
-        request=request, resultado=None, empresa=None, erro=None, selecionado={},
+        request=request, resultado=None, empresa=None, erro=None, selecionado=selecionado,
         analise=None, simulacao_id=None, grafico_atual_futuro=None, grafico_simples=None,
     )
 
