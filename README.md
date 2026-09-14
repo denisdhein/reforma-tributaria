@@ -16,7 +16,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Parâmetros versionados e cenários de alíquota | pronto |
 | Seed com empresas fictícias | pronto |
 | Rotas de leitura | pronto |
-| Motor de cálculo | pronto (44 testes) — 2 de 3 calibrações corrigidas, ver abaixo |
+| Motor de cálculo | pronto (47 testes) — 3 de 3 calibrações corrigidas, ver abaixo |
 | Simples: único vs. híbrido | pronto (motor) |
 | Interface web — rodar simulação e ver resultado | pronto (`/`, server-rendered) |
 | Login e multi-tenant (empresa/escritório, admin) | pronto — ver seção Autenticação |
@@ -555,7 +555,11 @@ Ver o cabeçalho de `app/seeds/regras_iniciais.py`. Resumo:
   e estimativa CGIBS de 27,91% (Resolução 14, de 29/07/2026).
 - **Anexos I a V do Simples** — completos (LC 123/2006, redação LC 155/2016,
   em vigor desde 01/01/2018; a reforma não alterou esses percentuais).
-- **`pct_ibs_cbs_no_das`** — fictício, valores de trabalho.
+- **Partilha de IBS/CBS no DAS do Simples** (`SIMPLES["partilha_ibs_cbs"]`)
+  — pesquisado (Resolução CGSN 190/2026, duas fontes), não o texto oficial
+  direto. *Conferir contra o DOU antes da defesa.* `fator_credito_
+  fornecedor_simples` (parâmetro separado, comprador do regime regular)
+  continua fictício — ver "Calibrações do motor".
 - **Imposto Seletivo** — desligado. Alíquotas dependem de lei ainda não aprovada.
 
 ## Limitações declaradas do MVP
@@ -571,7 +575,7 @@ identificadores estáveis que a camada de IA vai referenciar.
 
 ## Motor de cálculo — estado
 
-Implementado e com 44 testes passando (`pytest tests/`). Cobre: cenário atual
+Implementado e com 47 testes passando (`pytest tests/`). Cobre: cenário atual
 a plena carga como baseline fixo, transição ano a ano de 2026 a 2033 somando
 resíduo dos tributos antigos com IBS/CBS, cálculo item a item com queda para
 agregado, regimes diferenciados por item, crédito amplo com redução para
@@ -583,10 +587,9 @@ números.
 
 ### Calibrações do motor
 
-Três pontos apareceram rodando com os perfis do seed. Dois já foram
-corrigidos; o terceiro tem a base legal real encontrada mas não os
-números completos — documentado aqui em vez de "consertado" com um
-número chutado.
+Três pontos apareceram rodando com os perfis do seed. Os três já foram
+corrigidos — nenhum com número chutado, todos com base legal real ou
+matemática conferida à mão.
 
 **1. Base do IBS/CBS no Simples híbrido — CORRIGIDO (01/09/2026).** Em
 `app/motor/simples.py`, a apuração regular do híbrido calculava IBS/CBS sobre
@@ -657,44 +660,69 @@ seed: sobrepor uma linha de 14,5 milhões (padrão 20%) pra 30% reduziu o
 crédito daquela linha especificamente, sem afetar as outras — a limitação
 passou a mostrar "1 de 3 linha(s) com valor próprio".
 
-**3. `fator_credito_fornecedor_simples` — base legal encontrada
-(02/09/2026), número ainda não corrigido.** Pesquisa (várias buscas e
-tentativas de acessar o texto integral) encontrou a base real, que muda o
-entendimento do parâmetro:
+**3. Partilha de IBS/CBS no DAS do Simples — CORRIGIDO (04/09/2026), com uma
+ressalva que permanece.** Base legal encontrada em 02/09/2026 (Art. 47 §9º
+II da LC 214/2025 + Art. 58 §§4º-5º da Resolução CGSN nº 190/2026): o
+crédito que um adquirente do regime regular tem ao comprar de optante do
+Simples equivale "aos percentuais de IBS e CBS previstos nos Anexos I a
+V... para a faixa de receita bruta" do fornecedor — por **anexo e por
+faixa**, com um valor que **cresce a partir de 2029**, não um fixo único
+por anexo como o parâmetro `pct_ibs_cbs_no_das` modelava até então.
 
-- **Art. 47, §9º, II da LC 214/2025**: quando o adquirente (regime
-  regular) compra de optante do Simples que ficou no regime único, o
-  crédito é "em montante equivalente ao devido" pelo fornecedor via DAS —
-  não uma fração arbitrária da alíquota nova.
-- **Art. 58, §§4º e 5º da Resolução CGSN nº 190/2026** (publicada
-  10/08/2026, efeitos a partir de 01/01/2027): detalha que esse montante
-  corresponde "aos percentuais de IBS e CBS previstos nos Anexos I a V...
-  para a faixa de receita bruta a que a microempresa estiver sujeita" —
-  ou seja, é **por anexo e por faixa do fornecedor**, o mesmo dado que
-  `pct_ibs_cbs_no_das` (`app/seeds/regras_iniciais.py`) já tenta
-  representar. Não são dois parâmetros independentes — são a mesma coisa
-  vista de dois ângulos, e hoje o motor trata como se fossem diferentes.
-- Um número real localizado: **Anexo I, 2027–2028, CBS+IBS = 15,50% do
-  DAS** (15,33% CBS + 0,17% IBS, substituindo a fatia que hoje é
-  PIS+COFINS). Não achei a tabela completa (todos os anexos, todos os
-  anos até 2033) em texto — ela existe dentro dos Anexos da própria
-  Resolução, que os agregadores jurídicos consultados citam por número
-  mas não reproduzem em HTML; precisaria do PDF oficial do Diário Oficial
-  da União (in.gov.br, edição extra de 10/08/2026) pra extrair de
-  verdade.
+Na época só tinha um dado real (Anexo I, 2027-2028 = 15,50% do DAS) — não a
+tabela completa. Em 04/09/2026, nova pesquisa encontrou duas fontes
+independentes com a tabela inteira: mentorfiscal.com.br (base 2027-2028,
+todos os 5 anexos) e simtax.com.br (progressão 2029-2033, confirmada pro
+Anexo I). As duas batem entre si e com o dado que já tínhamos. Achado que
+destravou a implementação: a progressão do IBS dentro do Simples segue
+**a mesma escala 10/20/30/40/100%** que o calendário `ANOS` já usa pro
+resto do motor — então em vez de uma tabela gigante (5 anexos × 6 faixas ×
+7 anos), a fórmula ficou:
 
-**Decisão consciente**: não mudei nenhum número agora. `pct_ibs_cbs_no_das`
-hoje é um valor único fixo por anexo; a lei prevê um valor **por ano**
-(cresce a partir de 2029, mesma lógica de transição que `fracoes_do_ano`
-já modela em outro lugar do motor). Usar o número de 2027-2028 como
-constante pra todos os anos melhoraria a precisão daquele período e
-pioraria a dos demais — silenciosamente, sem o código deixar isso claro.
-Prioridade, se/quando isso avançar: (1) conseguir a tabela completa (o
-PDF oficial resolveria), (2) dar a `pct_ibs_cbs_no_das` uma dimensão de
-ano, (3) só depois decidir o que fazer com
-`fator_credito_fornecedor_simples` — que pode nem precisar continuar
-existindo como parâmetro separado, dado o que a Resolução 190/2026 diz.
+```
+pct_ibs_cbs_no_das = cbs_fixo + icms_iss_original × fração_ibs_do_ano
+```
 
-Nenhum desses (nem os dois ainda pendentes) invalida a arquitetura: são
-calibração dentro de funções isoladas, cobertas por teste, sem acoplamento
-com o resto do motor.
+`cbs_fixo` (CBS já substitui PIS/COFINS por inteiro desde 2027, não muda
+mais) e `icms_iss_original` (a fatia de ICMS/ISS que esse anexo/faixa tinha
+antes da reforma, migrando gradualmente pra IBS) vêm de
+`app/seeds/regras_iniciais.py:PARTILHA_IBS_CBS_SIMPLES` — ver o comentário
+completo ali, com a fonte de cada número. `app/motor/simples.py` ganhou
+`_pct_ibs_cbs_no_das()`, chamada tanto no regime único (teto do crédito
+transferível ao cliente) quanto no híbrido (redução do DAS). Antes de 2027
+a Resolução ainda não vale — o motor devolve zero, sem separar IBS/CBS do
+DAS (comportamento correto: a mudança só começa em 2027).
+
+**Bug real achado testando ao vivo contra o servidor** (não pego pelos
+testes automatizados): as chaves de faixa (`1` a `6`) no dicionário Python
+são inteiras, mas `RegrasVersao.parametros` passa por `json.dumps`/
+`json.loads` ao ir pro banco e voltar — e JSON não tem chave inteira, toda
+chave de objeto vira string nesse round-trip. Rodando os testes (que
+importam o dicionário direto do módulo, sem passar pelo banco) tudo batia;
+simulando pela tela de verdade, o crédito transferido ficava zerado o
+tempo todo, silenciosamente. Corrigido usando string ("1".."6") desde a
+origem, mesma convenção que `anexos` já usava. Fica registrado como lição:
+testar só contra o módulo Python não pega esse tipo de bug — precisa
+passar pelo banco pelo menos uma vez.
+
+3 testes novos com números conferidos à mão (`test_partilha_ibs_cbs_no_das_*`)
+e testado ao vivo simulando a Distribuidora do seed (Anexo I, faixa 5) em
+2027, 2030 e 2033: o crédito transferido ao cliente no regime único cresce
+de R$ 57.396,62 pra R$ 82.206,78 pra R$ 181.447,39 — e o DAS do híbrido
+encolhe na mesma proporção, exatamente o comportamento esperado da
+transição. 47 testes passando.
+
+**Ressalva que permanece**: os números das faixas 2-5 dos Anexos II a V
+foram estendidos pela mesma fórmula do Anexo I (o mecanismo de transição
+ICMS/ISS→IBS é do sistema inteiro, não específico de anexo), mas só o
+Anexo I teve a progressão ano a ano confirmada nas fontes — os demais são
+extrapolação razoável, não confirmação direta. A faixa 6 de todos os
+anexos não tem ICMS/ISS no DAS (regra de sublimite à parte) e ficou com um
+valor fixo, sem a transição gradual — só o Anexo I teve o salto de 2029
+confirmado nas fontes; os outros quatro ficaram conservadoramente planos.
+CONFERIR contra o texto oficial da Resolução (DOU 10/08/2026) antes de
+usar em defesa. `fator_credito_fornecedor_simples` (parâmetro separado,
+usado quando o comprador é do regime regular) continua fictício — é
+conceitualmente o mesmo dado, mas consolidar os dois exigiria saber o
+anexo/faixa de cada fornecedor por linha de custo, que `CustoEmpresa` não
+guarda hoje.

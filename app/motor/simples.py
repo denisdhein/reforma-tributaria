@@ -55,6 +55,36 @@ def aliquota_efetiva(rbt12: Decimal, anexo: list[dict]) -> tuple[Decimal, dict]:
     return fracao(efetiva), faixa
 
 
+def _pct_ibs_cbs_no_das(
+    cfg: dict, anexo_id: str, faixa_num: int, ano_base: int, fracoes_ano: dict,
+) -> Decimal:
+    """
+    Fração do DAS que é IBS+CBS, por anexo e faixa (Resolução CGSN 190/2026,
+    ver comentário completo em app/seeds/regras_iniciais.py). Antes de 2027 a
+    Resolução ainda não vale — DAS 100% no formato antigo, sem CBS/IBS.
+    De 2027 em diante: `cbs_fixo` (CBS já substitui PIS/COFINS por inteiro,
+    não muda mais) mais a fatia de ICMS/ISS que migra pra IBS na mesma
+    proporção 10/20/30/40/100% do calendário `ANOS` — por isso só multiplica
+    `icms_iss_original` pela fração `ibs` do ano, sem reinventar a escala.
+    """
+    if ano_base < 2027:
+        return ZERO
+    # Chave de faixa é string — dict vem de RegrasVersao.parametros (JSON no
+    # banco), onde toda chave de objeto é string, mesmo se a origem em
+    # regras_iniciais.py fosse int.
+    dados = cfg.get("partilha_ibs_cbs", {}).get(anexo_id, {}).get(str(faixa_num))
+    if dados is None:
+        return ZERO
+    icms_iss = dados.get("icms_iss_original")
+    if icms_iss is None:
+        # Faixa 6: sem ICMS/ISS no DAS, sem transição gradual — só o
+        # patamar fixo (que pode ter um único salto em 2029, ver seed).
+        chave = "cbs_fixo_2029" if ano_base >= 2029 else "cbs_fixo"
+        return D(str(dados.get(chave, dados["cbs_fixo"])))
+    f_ibs = D(str(fracoes_ano.get("ibs", 0)))
+    return D(str(dados["cbs_fixo"])) + D(str(icms_iss)) * f_ibs
+
+
 def calcular(
     entrada: EntradaSimulacao,
     opcao: str,
@@ -62,6 +92,7 @@ def calcular(
     aliq_ibs: Decimal,
     aliq_cbs: Decimal,
     fracoes_ano: dict,
+    ano_base: int,
 ) -> dict:
     cfg = parametros["simples"]
     anexo_id = str(entrada.simples_anexo)
@@ -72,7 +103,7 @@ def calcular(
     efetiva, faixa = aliquota_efetiva(rbt12, anexo)
     das_cheio = dinheiro(receita * efetiva)
 
-    pct_ibs_cbs = D(str(cfg["pct_ibs_cbs_no_das"].get(anexo_id, 0)))
+    pct_ibs_cbs = _pct_ibs_cbs_no_das(cfg, anexo_id, faixa["faixa"], ano_base, fracoes_ano)
     parcela_ibs_cbs = dinheiro(das_cheio * pct_ibs_cbs)
 
     f_ibs = D(str(fracoes_ano.get("ibs", 0)))
