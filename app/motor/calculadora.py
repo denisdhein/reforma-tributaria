@@ -208,7 +208,7 @@ def calcular(
     if entrada.regime == "simples":
         opcoes = [opcao_simples] if opcao_simples else ["unico", "hibrido"]
         res_simples = {
-            o: simples.calcular(entrada, o, parametros, aliq_ibs, aliq_cbs, fracoes)
+            o: simples.calcular(entrada, o, parametros, aliq_ibs, aliq_cbs, fracoes, ano_base)
             for o in opcoes
         }
         escolhida = opcao_simples or "unico"

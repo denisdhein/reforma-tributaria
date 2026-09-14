@@ -335,6 +335,47 @@ def test_opcao_explicita_roda_apenas_ela():
     assert r["futuro"]["opcao_simples"] == "hibrido"
 
 
+def test_partilha_ibs_cbs_no_das_antes_de_2027_e_zero():
+    """
+    Calibração 3: a Resolução CGSN 190/2026 só vale a partir de 2027 — antes
+    disso o DAS não separa IBS/CBS, então não há nada a transferir ao
+    cliente no regime único.
+    """
+    r = calcular(empresa_simples(), 2026, IBS, CBS, P)
+    assert r["simples"]["unico"]["credito_transferido_ao_cliente_rs"] == "0.00"
+
+
+def test_partilha_ibs_cbs_no_das_2027_confere_na_mao():
+    """
+    Anexo I, faixa 5 (Distribuidora do seed, RBT12 3,2mi): DAS cheio é
+    370.300,80 (já testado em test_aliquota_efetiva_anexo_i_faixa_3_confere_
+    na_mao pro cálculo de faixa — aqui é faixa 5). Em 2027-2028 a partilha é
+    15,50% fixo (CBS já substitui PIS/COFINS por inteiro, IBS ainda
+    simbólico) — 370.300,80 × 15,50% = 57.396,62.
+    """
+    r = calcular(empresa_simples(), 2027, IBS, CBS, P)
+    assert r["simples"]["unico"]["das_rs"] == "370300.80"
+    assert r["simples"]["unico"]["credito_transferido_ao_cliente_rs"] == "57396.62"
+
+
+def test_partilha_ibs_cbs_no_das_cresce_ate_2033():
+    """
+    A partir de 2029 a fatia de ICMS (33,50% na faixa 5) migra pra IBS na
+    mesma proporção 10/20/30/40/100% do calendário do motor. Em 2033, com o
+    ICMS zerado, a partilha total é 15,50% (CBS) + 33,50% (ICMS virou IBS
+    por inteiro) = 49,00% — 370.300,80 × 49% = 181.447,39. Cresce
+    monotonicamente ano a ano, e o híbrido puxa cada vez mais DAS pra fora.
+    """
+    r2027 = calcular(empresa_simples(), 2027, IBS, CBS, P)
+    r2030 = calcular(empresa_simples(), 2030, IBS, CBS, P)
+    r2033 = calcular(empresa_simples(), 2033, IBS, CBS, P)
+    credito_2027 = D(r2027["simples"]["unico"]["credito_transferido_ao_cliente_rs"])
+    credito_2030 = D(r2030["simples"]["unico"]["credito_transferido_ao_cliente_rs"])
+    credito_2033 = D(r2033["simples"]["unico"]["credito_transferido_ao_cliente_rs"])
+    assert credito_2027 < credito_2030 < credito_2033
+    assert r2033["simples"]["unico"]["credito_transferido_ao_cliente_rs"] == "181447.39"
+
+
 def test_hibrido_usa_receita_liquida_nao_a_bruta():
     """
     Regressão: a apuração regular do híbrido calculava IBS/CBS por fora
