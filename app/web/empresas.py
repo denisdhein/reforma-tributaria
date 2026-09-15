@@ -135,10 +135,21 @@ def _validar_e_montar(
     if faturamento is None or faturamento <= 0:
         raise ErroValidacao("Faturamento anual precisa ser maior que zero.")
 
+    # CNPJ digitado com pontuação ("12.345.678/0001-99", 18 caracteres) não
+    # cabia na coluna (14 — só os dígitos). SQLite deixa passar sem avisar
+    # (sem limite real de VARCHAR), mas Postgres (produção/Render) rejeita
+    # com erro de banco não tratado — 500 pro usuário, achado testando com
+    # empresa real. Guarda só os dígitos, valida a quantidade.
+    cnpj_digitos = "".join(c for c in cnpj if c.isdigit())
+    if cnpj_digitos and len(cnpj_digitos) != 14:
+        raise ErroValidacao(
+            f'CNPJ precisa ter 14 dígitos — "{cnpj.strip()}" tem {len(cnpj_digitos)}.'
+        )
+
     campos = dict(
         tenant_id=usuario.tenant_id,
         razao_social=razao_social.strip(),
-        cnpj=(cnpj.strip() or None),
+        cnpj=(cnpj_digitos or None),
         uf=uf.strip().upper(),
         municipio=municipio.strip(),
         ramo=(ramo.strip() or None),
