@@ -34,6 +34,7 @@
     --cor-aviso-texto: #8a5a0a;
     --cor-aviso-borda: #f0d9a0;
     --cor-cabecalho: #10201d;
+    --cor-lateral-acento: #4fd6dc;
     --sombra: 0 1px 2px rgba(16, 32, 29, 0.06), 0 2px 12px rgba(16, 32, 29, 0.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -63,7 +64,13 @@
   body {
     margin: 0;
     font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--cor-fundo);
+    background:
+      radial-gradient(ellipse 1000px 560px at 105% -12%,
+        color-mix(in srgb, var(--cor-primaria) 12%, transparent), transparent 62%),
+      radial-gradient(ellipse 700px 500px at -10% 100%,
+        color-mix(in srgb, var(--cor-primaria) 7%, transparent), transparent 60%),
+      var(--cor-fundo);
+    background-attachment: fixed;
     color: var(--cor-texto);
     line-height: 1.55;
     transition: background-color .15s ease, color .15s ease;
@@ -73,34 +80,85 @@
     font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
     font-variant-numeric: tabular-nums;
   }
-  header.topo {
+
+  /* Casca do app: barra lateral fixa (sempre escura, nas duas paletas —
+     mesmo raciocínio do header antigo) + área de conteúdo. Abaixo de
+     880px vira barra horizontal no topo — mesma marcação, só o flex-
+     direction muda, sem duplicar HTML pra versão mobile. */
+  .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .lateral {
+    width: 244px; flex-shrink: 0;
     background: var(--cor-cabecalho);
     color: #fff;
-    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    padding: 1.4rem 1rem;
     position: sticky;
     top: 0;
+    height: 100vh;
+    overflow-y: auto;
     z-index: 10;
   }
-  .topo-linha1 { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  header.topo h1 { margin: 0; font-size: 1.12rem; font-weight: 600; letter-spacing: -0.005em; }
-  .topo-acoes { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-  .topo-nav { display: flex; gap: 1.25rem; margin-top: 0.7rem; }
-  .topo-nav a {
-    color: #b9c7c1; text-decoration: none; font-size: 0.85rem; font-weight: 500;
-    padding-bottom: 0.4rem; border-bottom: 2px solid transparent;
+  .marca {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.4rem 0.6rem 1.6rem;
+    color: #fff;
   }
-  .topo-nav a.ativo, .topo-nav a:hover { color: #fff; border-bottom-color: var(--cor-primaria); }
+  .marca svg { flex-shrink: 0; color: var(--cor-lateral-acento); }
+  .marca-texto { font-family: "IBM Plex Serif", Georgia, serif; font-size: 0.95rem; font-weight: 600; line-height: 1.25; }
+  .nav-lateral { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; }
+  .nav-lateral a {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 9px;
+    border-left: 3px solid transparent;
+    color: #aebdb6; text-decoration: none;
+    font-size: 0.88rem; font-weight: 500;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .nav-lateral a svg { flex-shrink: 0; opacity: 0.85; }
+  .nav-lateral a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+  .nav-lateral a.ativo {
+    background: rgba(255, 255, 255, 0.08);
+    border-left-color: var(--cor-lateral-acento);
+    color: #fff;
+  }
+  .nav-lateral a.ativo svg { opacity: 1; color: var(--cor-lateral-acento); }
+  .lateral-rodape {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    padding-top: 1rem; margin-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .lateral-rodape form { margin: 0; }
 
+  .area-principal { flex: 1; min-width: 0; }
   main {
-    max-width: 980px;
+    max-width: 1080px;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 2.1rem 2.2rem;
     display: grid;
     gap: 1.25rem;
   }
+  @media (max-width: 880px) {
+    .app-shell { flex-direction: column; }
+    .lateral {
+      width: 100%; height: auto; position: sticky; flex-direction: row;
+      align-items: center; padding: 0.65rem 1rem; overflow-x: auto; overflow-y: visible;
+      gap: 0.5rem;
+    }
+    .marca { padding: 0.2rem 0.6rem 0.2rem 0.2rem; }
+    .marca-texto { display: none; }
+    .nav-lateral { flex-direction: row; flex: 1; gap: 0.2rem; }
+    .nav-lateral a { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 7px 7px 0 0; }
+    .nav-lateral a.ativo { border-left-color: transparent; border-bottom-color: var(--cor-lateral-acento); }
+    .lateral-rodape { flex-direction: row; padding-top: 0; margin-top: 0; border-top: none; border-left: 1px solid rgba(255, 255, 255, 0.1); padding-left: 0.75rem; }
+    main { padding: 1.25rem; }
+  }
+
   .cartao {
     background: var(--cor-superficie);
     border: 1px solid var(--cor-borda);
+    border-top: 3px solid var(--cor-primaria);
     border-radius: 14px;
     padding: 1.4rem 1.7rem;
     box-shadow: var(--sombra);
@@ -178,8 +236,8 @@
     letter-spacing: 0.003em;
     cursor: pointer;
     box-shadow:
-      0 1px 1px color-mix(in srgb, var(--cor-primaria) 35%, transparent),
-      0 4px 14px color-mix(in srgb, var(--cor-primaria) 28%, transparent);
+      0 1px 1px color-mix(in srgb, var(--cor-primaria) 20%, transparent),
+      0 2px 6px color-mix(in srgb, var(--cor-primaria) 14%, transparent);
     transition: background .15s ease, transform .12s ease, box-shadow .12s ease;
   }
   button:hover {
@@ -187,12 +245,12 @@
       color-mix(in srgb, var(--cor-botao-hover) 88%, white) 0%, var(--cor-botao-hover) 100%);
     transform: translateY(-1px);
     box-shadow:
-      0 1px 1px color-mix(in srgb, var(--cor-primaria) 35%, transparent),
-      0 8px 22px color-mix(in srgb, var(--cor-primaria) 34%, transparent);
+      0 1px 1px color-mix(in srgb, var(--cor-primaria) 20%, transparent),
+      0 4px 10px color-mix(in srgb, var(--cor-primaria) 18%, transparent);
   }
   button:active {
     transform: translateY(0);
-    box-shadow: 0 1px 1px color-mix(in srgb, var(--cor-primaria) 35%, transparent);
+    box-shadow: 0 1px 1px color-mix(in srgb, var(--cor-primaria) 20%, transparent);
   }
   button:disabled {
     opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none;
@@ -205,8 +263,8 @@
     border: 1px solid color-mix(in srgb, var(--cor-primaria) 75%, black);
     padding: 0.65rem 1.3rem; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
     box-shadow:
-      0 1px 1px color-mix(in srgb, var(--cor-primaria) 35%, transparent),
-      0 4px 14px color-mix(in srgb, var(--cor-primaria) 28%, transparent);
+      0 1px 1px color-mix(in srgb, var(--cor-primaria) 20%, transparent),
+      0 2px 6px color-mix(in srgb, var(--cor-primaria) 14%, transparent);
     transition: background .15s ease, transform .12s ease, box-shadow .12s ease;
   }
   .botao-link:hover {
@@ -276,8 +334,14 @@
   .indicador.reducao { background: var(--cor-sucesso-fraca); }
   .indicador.reducao .valor { color: var(--cor-sucesso); }
   table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-  th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--cor-borda); }
-  th { color: var(--cor-texto-suave); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  th, td { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--cor-borda); }
+  th {
+    color: var(--cor-texto-suave); font-weight: 600; font-size: 0.76rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--cor-primaria);
+  }
+  tbody tr:nth-child(even) { background: var(--cor-superficie-alt); }
+  tbody tr:hover { background: var(--cor-primaria-fraca); }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .selo {
     display: inline-block;
@@ -313,32 +377,35 @@
     margin-top: 0.5rem;
   }
 
-  .botao-tema, .topo-acoes button.sair {
+  .botao-tema, .lateral-rodape button.sair {
     background: transparent;
     box-shadow: none;
     border: 1px solid #3a4a44;
     color: #fff;
   }
   .botao-tema {
-    padding: 0.35rem 0.6rem;
+    padding: 0.4rem 0.6rem;
     font-size: 0.95rem;
     line-height: 1;
     border-radius: 999px;
+    align-self: flex-start;
   }
-  .botao-tema:hover, .topo-acoes button.sair:hover {
+  .botao-tema:hover, .lateral-rodape button.sair:hover {
     background: #1c2925; transform: none; box-shadow: none;
   }
 
   .usuario-chip { display: flex; align-items: center; gap: 0.5rem; }
-  .usuario-chip .quem { font-family: "IBM Plex Sans", sans-serif; font-size: 0.8rem; color: #b9c7c1; }
+  .usuario-chip .quem { font-family: "IBM Plex Sans", sans-serif; font-size: 0.78rem; color: #b9c7c1; line-height: 1.3; }
   .selo-admin {
-    background: #7c5cbf; color: #fff; font-size: 0.65rem; font-weight: 700;
-    padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle;
+    display: inline-block;
+    background: #7c5cbf; color: #fff; font-size: 0.62rem; font-weight: 700;
+    padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.15rem; vertical-align: middle;
   }
-  .topo-acoes form { margin: 0; }
-  .topo-acoes button.sair {
+  .lateral-rodape form { margin: 0; }
+  .lateral-rodape button.sair {
+    width: 100%;
     color: #dce7e2;
-    padding: 0.3rem 0.7rem; font-size: 0.78rem; font-weight: 500; border-radius: 7px;
+    padding: 0.5rem 0.7rem; font-size: 0.8rem; font-weight: 500; border-radius: 7px;
   }
 
   .avatar {
@@ -450,47 +517,74 @@
     * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .no-imprimir { display: none !important; }
     body { background: #fff; }
-    header.topo { position: static; }
+    .app-shell { display: block; }
     .cartao { box-shadow: none; border: 1px solid var(--cor-borda); break-inside: avoid; }
     table { break-inside: avoid; }
   }
 </style>
 </head>
 <body>
-<header class="topo no-imprimir">
-  <div class="topo-linha1">
-    <h1>Sistema de apoio à decisão · Reforma Tributária</h1>
-    <div class="topo-acoes">
-      <button type="button" id="botao-tema" class="botao-tema" title="Alternar tema claro/escuro">🌙</button>
-      {% if usuario %}
-        <div class="usuario-chip">
-          {% if usuario.foto_nome %}
-            <img src="/static/uploads/{{ usuario.foto_nome }}" alt="" class="avatar">
-          {% else %}
-            <span class="avatar" style="background: {{ usuario.id | cor_avatar }}">{{ usuario.nome[:1]|upper }}</span>
-          {% endif %}
-          <span class="quem">
-            {{ usuario.nome }} · {{ usuario.tenant.nome }}
-            {% if usuario.papel.value == 'admin' %}<span class="selo-admin">ADMIN</span>{% endif %}
-          </span>
-        </div>
-        <form method="post" action="/logout"><button type="submit" class="sair">Sair</button></form>
-      {% endif %}
-    </div>
+<div class="app-shell">
+<aside class="lateral no-imprimir">
+  <div class="marca">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6h-2" />
+      <path d="M14 3v5a1 1 0 0 0 1 1h5" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+    </svg>
+    <span class="marca-texto">Reforma<br>Tributária</span>
   </div>
   {% if usuario %}
-    <nav class="topo-nav">
-      <a href="/" class="{{ 'ativo' if pagina_ativa == 'simular' }}">Simular</a>
-      <a href="/empresas" class="{{ 'ativo' if pagina_ativa == 'empresas' }}">Empresas</a>
-      <a href="/cenarios" class="{{ 'ativo' if pagina_ativa == 'cenarios' }}">Cenários</a>
-      <a href="/historico" class="{{ 'ativo' if pagina_ativa == 'historico' }}">Histórico</a>
-      <a href="/perfil" class="{{ 'ativo' if pagina_ativa == 'perfil' }}">Perfil</a>
+    <nav class="nav-lateral">
+      <a href="/" class="{{ 'ativo' if pagina_ativa == 'simular' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
+        Simular
+      </a>
+      <a href="/empresas" class="{{ 'ativo' if pagina_ativa == 'empresas' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="8" y1="7" x2="8" y2="7.01"/><line x1="12" y1="7" x2="12" y2="7.01"/><line x1="16" y1="7" x2="16" y2="7.01"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/></svg>
+        Empresas
+      </a>
+      <a href="/cenarios" class="{{ 'ativo' if pagina_ativa == 'cenarios' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="12" r="2.4"/><path d="M8 7 16 11"/><path d="M8 17 16 13"/></svg>
+        Cenários
+      </a>
+      <a href="/historico" class="{{ 'ativo' if pagina_ativa == 'historico' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+        Histórico
+      </a>
+      <a href="/perfil" class="{{ 'ativo' if pagina_ativa == 'perfil' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.5 4.5-5.3 7.5-5.3s5.9 1.8 7.5 5.3"/></svg>
+        Perfil
+      </a>
     </nav>
+  {% else %}
+    <div style="flex: 1"></div>
   {% endif %}
-</header>
+  <div class="lateral-rodape">
+    <button type="button" id="botao-tema" class="botao-tema" title="Alternar tema claro/escuro">🌙</button>
+    {% if usuario %}
+      <div class="usuario-chip">
+        {% if usuario.foto_nome %}
+          <img src="/static/uploads/{{ usuario.foto_nome }}" alt="" class="avatar">
+        {% else %}
+          <span class="avatar" style="background: {{ usuario.id | cor_avatar }}">{{ usuario.nome[:1]|upper }}</span>
+        {% endif %}
+        <span class="quem">
+          {{ usuario.nome }} · {{ usuario.tenant.nome }}
+          {% if usuario.papel.value == 'admin' %}<br><span class="selo-admin">ADMIN</span>{% endif %}
+        </span>
+      </div>
+      <form method="post" action="/logout"><button type="submit" class="sair">Sair</button></form>
+    {% endif %}
+  </div>
+</aside>
+<div class="area-principal">
 <main>
   {% block conteudo %}{% endblock %}
 </main>
+</div>
+</div>
 <script>
   (function () {
     var btn = document.getElementById('botao-tema');
