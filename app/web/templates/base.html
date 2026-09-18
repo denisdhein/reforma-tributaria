@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}Reforma Tributária · Simulador{% endblock %}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script>
   // Aplica o tema salvo antes do primeiro paint — sem isso a página pisca
   // clara e só depois escurece.
@@ -16,56 +17,61 @@
 </script>
 <style>
   :root {
-    --cor-fundo: #f8fafc;
+    --cor-fundo: #f4f6f3;
     --cor-superficie: #ffffff;
-    --cor-superficie-alt: #f3f4f6;
-    --cor-texto: #111827;
-    --cor-texto-suave: #6b7280;
-    --cor-borda: #e5e7eb;
-    --cor-primaria: #1d4ed8;
-    --cor-primaria-fraca: #eff6ff;
-    --cor-botao-hover: #1e40af;
-    --cor-sucesso: #15803d;
-    --cor-sucesso-fraca: #f0fdf4;
-    --cor-perigo: #b91c1c;
-    --cor-perigo-fraca: #fef2f2;
-    --cor-aviso-bg: #fffbeb;
-    --cor-aviso-texto: #92400e;
-    --cor-aviso-borda: #fde68a;
-    --cor-cabecalho: #0f172a;
-    --sombra: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+    --cor-superficie-alt: #eceef0;
+    --cor-texto: #16211c;
+    --cor-texto-suave: #57645d;
+    --cor-borda: #dce1db;
+    --cor-primaria: #0e6e86;
+    --cor-primaria-fraca: #e1f1f4;
+    --cor-botao-hover: #0a5568;
+    --cor-sucesso: #1f7a4d;
+    --cor-sucesso-fraca: #eaf6ee;
+    --cor-perigo: #b33a2e;
+    --cor-perigo-fraca: #fbeae7;
+    --cor-aviso-bg: #fcf3e0;
+    --cor-aviso-texto: #8a5a0a;
+    --cor-aviso-borda: #f0d9a0;
+    --cor-cabecalho: #10201d;
+    --sombra: 0 1px 2px rgba(16, 32, 29, 0.06), 0 2px 12px rgba(16, 32, 29, 0.05);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --cor-fundo: #0b1220; --cor-superficie: #17223a; --cor-superficie-alt: #1f2c47;
-      --cor-texto: #e5e7eb; --cor-texto-suave: #94a3b8; --cor-borda: #2b3a56;
-      --cor-primaria: #60a5fa; --cor-primaria-fraca: #1c2f4d; --cor-botao-hover: #3b82f6;
-      --cor-sucesso: #4ade80; --cor-sucesso-fraca: #12271b;
-      --cor-perigo: #f87171; --cor-perigo-fraca: #331515;
-      --cor-aviso-bg: #2e2510; --cor-aviso-texto: #fbbf24; --cor-aviso-borda: #6b4a10;
-      --cor-cabecalho: #060a14;
+      --cor-fundo: #0e1512; --cor-superficie: #17201c; --cor-superficie-alt: #1f2924;
+      --cor-texto: #e7ece7; --cor-texto-suave: #9aaca2; --cor-borda: #2b362f;
+      --cor-primaria: #3fc0d6; --cor-primaria-fraca: #163339; --cor-botao-hover: #63d2e4;
+      --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #123322;
+      --cor-perigo: #e2786a; --cor-perigo-fraca: #3a231d;
+      --cor-aviso-bg: #362a12; --cor-aviso-texto: #e3ac4c; --cor-aviso-borda: #4a3a18;
+      --cor-cabecalho: #0a1210;
       --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
   }
   :root[data-theme="dark"] {
-    --cor-fundo: #0b1220; --cor-superficie: #17223a; --cor-superficie-alt: #1f2c47;
-    --cor-texto: #e5e7eb; --cor-texto-suave: #94a3b8; --cor-borda: #2b3a56;
-    --cor-primaria: #60a5fa; --cor-primaria-fraca: #1c2f4d; --cor-botao-hover: #3b82f6;
-    --cor-sucesso: #4ade80; --cor-sucesso-fraca: #12271b;
-    --cor-perigo: #f87171; --cor-perigo-fraca: #331515;
-    --cor-aviso-bg: #2e2510; --cor-aviso-texto: #fbbf24; --cor-aviso-borda: #6b4a10;
-    --cor-cabecalho: #060a14;
+    --cor-fundo: #0e1512; --cor-superficie: #17201c; --cor-superficie-alt: #1f2924;
+    --cor-texto: #e7ece7; --cor-texto-suave: #9aaca2; --cor-borda: #2b362f;
+    --cor-primaria: #3fc0d6; --cor-primaria-fraca: #163339; --cor-botao-hover: #63d2e4;
+    --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #123322;
+    --cor-perigo: #e2786a; --cor-perigo-fraca: #3a231d;
+    --cor-aviso-bg: #362a12; --cor-aviso-texto: #e3ac4c; --cor-aviso-borda: #4a3a18;
+    --cor-cabecalho: #0a1210;
     --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--cor-fundo);
     color: var(--cor-texto);
     line-height: 1.55;
     transition: background-color .15s ease, color .15s ease;
+  }
+  h1, h2, h3, .cartao h2 { font-family: "IBM Plex Serif", Georgia, serif; }
+  .mono, .valor, .indicador .valor, .grafico-valor, td.num, th.num, .selo {
+    font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+    font-variant-numeric: tabular-nums;
   }
   header.topo {
     background: var(--cor-cabecalho);
@@ -76,11 +82,11 @@
     z-index: 10;
   }
   .topo-linha1 { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  header.topo h1 { margin: 0; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+  header.topo h1 { margin: 0; font-size: 1.12rem; font-weight: 600; letter-spacing: -0.005em; }
   .topo-acoes { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
   .topo-nav { display: flex; gap: 1.25rem; margin-top: 0.7rem; }
   .topo-nav a {
-    color: #cbd5e1; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+    color: #b9c7c1; text-decoration: none; font-size: 0.85rem; font-weight: 500;
     padding-bottom: 0.4rem; border-bottom: 2px solid transparent;
   }
   .topo-nav a.ativo, .topo-nav a:hover { color: #fff; border-bottom-color: var(--cor-primaria); }
@@ -95,15 +101,17 @@
   .cartao {
     background: var(--cor-superficie);
     border: 1px solid var(--cor-borda);
-    border-radius: 12px;
-    padding: 1.35rem 1.6rem;
+    border-radius: 14px;
+    padding: 1.4rem 1.7rem;
     box-shadow: var(--sombra);
     transition: background-color .15s ease, border-color .15s ease;
   }
   .cartao h2 {
     margin-top: 0;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
+    font-weight: 600;
     color: var(--cor-texto);
+    letter-spacing: -0.005em;
   }
   .campo { margin-bottom: 1rem; }
   .campo label {
@@ -138,7 +146,8 @@
     color: #fff;
     border: none;
     padding: 0.65rem 1.4rem;
-    border-radius: 7px;
+    border-radius: 8px;
+    font-family: "IBM Plex Sans", sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
@@ -149,13 +158,13 @@
   .botao-link {
     display: inline-block;
     background: var(--cor-primaria); color: #fff; text-decoration: none;
-    padding: 0.6rem 1.2rem; border-radius: 7px; font-size: 0.9rem; font-weight: 600;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
   }
   .botao-link:hover { background: var(--cor-botao-hover); }
   .botao-secundario {
     display: inline-block;
     background: transparent; color: var(--cor-primaria); border: 1px solid var(--cor-borda);
-    padding: 0.6rem 1.2rem; border-radius: 7px; font-size: 0.9rem; font-weight: 600;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
     cursor: pointer;
   }
   .botao-secundario:hover { background: var(--cor-superficie-alt); }
@@ -175,12 +184,16 @@
   .erro { background: var(--cor-perigo-fraca); color: var(--cor-perigo); border-color: color-mix(in srgb, var(--cor-perigo) 30%, transparent); }
   .sucesso { background: var(--cor-sucesso-fraca); color: var(--cor-sucesso); border-color: color-mix(in srgb, var(--cor-sucesso) 30%, transparent); }
   .indicador {
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
     background: var(--cor-superficie-alt);
+    border: 1px solid var(--cor-borda);
   }
-  .indicador .rotulo { font-size: 0.78rem; color: var(--cor-texto-suave); text-transform: uppercase; letter-spacing: 0.03em; }
-  .indicador .valor { font-size: 1.35rem; font-weight: 700; margin-top: 0.2rem; }
+  .indicador .rotulo {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.76rem; color: var(--cor-texto-suave); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .indicador .valor { font-size: 1.5rem; font-weight: 600; margin-top: 0.3rem; letter-spacing: -0.01em; }
   .indicador.aumento { background: var(--cor-perigo-fraca); }
   .indicador.aumento .valor { color: var(--cor-perigo); }
   .indicador.reducao { background: var(--cor-sucesso-fraca); }
@@ -192,8 +205,9 @@
   .selo {
     display: inline-block;
     font-size: 0.72rem;
-    font-weight: 700;
-    padding: 0.15rem 0.5rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 0.2rem 0.55rem;
     border-radius: 999px;
     background: var(--cor-primaria-fraca);
     color: var(--cor-primaria);
@@ -224,27 +238,27 @@
 
   .botao-tema {
     background: transparent;
-    border: 1px solid #475569;
+    border: 1px solid #3a4a44;
     color: #fff;
     padding: 0.35rem 0.6rem;
     font-size: 0.95rem;
     line-height: 1;
     border-radius: 999px;
   }
-  .botao-tema:hover { background: #1e293b; }
+  .botao-tema:hover { background: #1c2925; }
 
   .usuario-chip { display: flex; align-items: center; gap: 0.5rem; }
-  .usuario-chip .quem { font-size: 0.8rem; color: #cbd5e1; }
+  .usuario-chip .quem { font-family: "IBM Plex Sans", sans-serif; font-size: 0.8rem; color: #b9c7c1; }
   .selo-admin {
-    background: #7c3aed; color: #fff; font-size: 0.65rem; font-weight: 700;
+    background: #7c5cbf; color: #fff; font-size: 0.65rem; font-weight: 700;
     padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle;
   }
   .topo-acoes form { margin: 0; }
   .topo-acoes button.sair {
-    background: transparent; border: 1px solid #475569; color: #e2e8f0;
+    background: transparent; border: 1px solid #3a4a44; color: #dce7e2;
     padding: 0.3rem 0.7rem; font-size: 0.78rem; font-weight: 500;
   }
-  .topo-acoes button.sair:hover { background: #1e293b; }
+  .topo-acoes button.sair:hover { background: #1c2925; }
 
   .avatar {
     display: inline-flex; align-items: center; justify-content: center;
@@ -301,14 +315,18 @@
     height: 100%;
     max-width: 160px;
   }
-  .grafico-valor { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.4rem; white-space: nowrap; }
+  .grafico-valor { font-size: 0.84rem; font-weight: 600; margin-bottom: 0.4rem; white-space: nowrap; }
   .grafico-barra {
     width: 100%;
     max-width: 90px;
-    border-radius: 6px 6px 0 0;
+    border-radius: 8px 8px 3px 3px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
     transition: height .35s ease;
   }
-  .grafico-rotulo { font-size: 0.78rem; color: var(--cor-texto-suave); margin-top: 0.6rem; text-align: center; }
+  .grafico-rotulo {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.78rem; color: var(--cor-texto-suave); margin-top: 0.6rem; text-align: center;
+  }
 
   .perfil-foto-campo { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
   .chk-remover { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--cor-texto-suave); margin-top: 0.4rem; font-weight: 400; }
@@ -333,16 +351,16 @@
        de @media print — achado testando com o tema escuro ativo. */
     :root {
       --cor-fundo: #ffffff !important; --cor-superficie: #ffffff !important;
-      --cor-superficie-alt: #f3f4f6 !important;
-      --cor-texto: #111827 !important; --cor-texto-suave: #4b5563 !important;
-      --cor-borda: #d1d5db !important;
-      --cor-primaria: #1d4ed8 !important; --cor-primaria-fraca: #eff6ff !important;
-      --cor-botao-hover: #1e40af !important;
-      --cor-sucesso: #15803d !important; --cor-sucesso-fraca: #f0fdf4 !important;
-      --cor-perigo: #b91c1c !important; --cor-perigo-fraca: #fef2f2 !important;
-      --cor-aviso-bg: #fffbeb !important; --cor-aviso-texto: #92400e !important;
-      --cor-aviso-borda: #fde68a !important;
-      --cor-cabecalho: #0f172a !important; --sombra: none !important;
+      --cor-superficie-alt: #eceef0 !important;
+      --cor-texto: #16211c !important; --cor-texto-suave: #57645d !important;
+      --cor-borda: #dce1db !important;
+      --cor-primaria: #0e6e86 !important; --cor-primaria-fraca: #e1f1f4 !important;
+      --cor-botao-hover: #0a5568 !important;
+      --cor-sucesso: #1f7a4d !important; --cor-sucesso-fraca: #eaf6ee !important;
+      --cor-perigo: #b33a2e !important; --cor-perigo-fraca: #fbeae7 !important;
+      --cor-aviso-bg: #fcf3e0 !important; --cor-aviso-texto: #8a5a0a !important;
+      --cor-aviso-borda: #f0d9a0 !important;
+      --cor-cabecalho: #10201d !important; --sombra: none !important;
     }
     * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .no-imprimir { display: none !important; }

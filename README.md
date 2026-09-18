@@ -22,6 +22,7 @@ Esqueleto funcional. Sobe, conecta no banco, carrega parâmetros.
 | Login e multi-tenant (empresa/escritório, admin) | pronto — ver seção Autenticação |
 | Integração com IA + camada de verificação (RF05) | pronto — ver seção IA generativa |
 | Tema claro/escuro, navegação, perfil (foto, nome, nome da conta) | pronto |
+| Identidade visual (tipografia, paleta) | pronto — ver seção própria |
 | Cadastro de empresa pela tela (RF01) — empresa, custos, itens | pronto — ver seção Cadastro de empresa |
 | Cenários de alíquota criados pelo usuário ("e se…") | pronto — ver seção Cenários |
 | Gráfico de comparação (RF06) | pronto — ver seção Gráficos |
@@ -187,6 +188,49 @@ porque pegava essas propriedades da regra base de `button`, que um `<a>`
 não tem. Cor explícita em qualquer link estilizado como botão sempre
 vence o `:visited` do navegador, então isso não volta a acontecer em
 nenhum outro link da tela.
+
+### Identidade visual (18/09/2026)
+
+Pedido do Denis: "dá pra deixar a interface mais bonita?". A tela estava
+funcional mas genérica — fonte padrão do sistema, azul comum de
+dashboard, cards planos. Refeito só em `app/web/templates/base.html`
+(tokens de cor + tipografia são compartilhados por toda a aplicação via
+CSS custom properties, então um único arquivo alcança todas as telas):
+
+- **Tipografia**: IBM Plex Serif (títulos), IBM Plex Sans (corpo) e IBM
+  Plex Mono (valores monetários, percentuais, tabelas — com
+  `font-variant-numeric: tabular-nums` pra colunas de número alinharem).
+  Carregadas via Google Fonts (`<link>` no `<head>`, mesmo domínio já
+  usado pelo `parametros_motor.html` gerado nessa mesma sessão — os dois
+  documentos do "produto Reforma Tributária" agora compartilham a mesma
+  linguagem visual).
+- **Cor**: saiu o azul genérico (`#1d4ed8`) por um teal mais próprio
+  (`#0e6e86` claro / `#3fc0d6` escuro) — verde/vermelho continuam
+  reservados pro significado semântico (redução/aumento de carga), não
+  competem com o acento principal. Fundo, bordas e texto levemente
+  reaquecidos (verde-acinzentado em vez de azul-acinzentado) pra combinar.
+- **Hierarquia**: cards com mais respiro (padding/radius maiores),
+  números grandes dos indicadores (carga atual/simulada/variação) mais
+  pesados, barras do gráfico com cantos mais arredondados e um highlight
+  sutil no topo.
+- Cores do cabeçalho (sempre escuro, nas duas paletas — dark navbar sobre
+  página clara é um padrão comum) reajustadas de cinza-azulado pra
+  cinza-esverdeado, coerente com o novo acento.
+- `@media print` (RF07) recebeu os mesmos tokens atualizados, senão o PDF
+  exportado saía com a paleta antiga enquanto a tela já usava a nova.
+- Nenhuma mudança de estrutura HTML nas páginas — só `base.html` (tokens +
+  regras de componente). `app/web/graficos.py` já usava `var(--cor-...)`
+  pras cores das barras, então o gráfico herdou a paleta nova de graça,
+  sem precisar tocar no Python.
+- Testado visualmente nas telas de login, simular, empresas e num
+  resultado completo (indicadores, gráfico, tabela de tributos, único vs.
+  híbrido, limitações, análise de IA) — tema escuro conferido por
+  screenshot; tema claro conferido lendo os valores computados das
+  variáveis CSS direto do DOM (o ambiente de preview usado nessa sessão
+  tem um problema conhecido de renderizar capturas de tela do tema claro
+  como se fossem escuras — achado ao vivo, não é bug da aplicação: o
+  `getComputedStyle` confirma os tokens corretos mesmo quando a captura
+  engana).
 
 ## Gráfico de comparação (RF06)
 
