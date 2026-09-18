@@ -2,6 +2,20 @@
 {% block titulo %}{{ 'Editar empresa' if modo == 'editar' else 'Nova empresa' }} · Reforma Tributária{% endblock %}
 {% block conteudo %}
 
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="8" y1="7" x2="8" y2="7.01"/><line x1="12" y1="7" x2="12" y2="7.01"/><line x1="16" y1="7" x2="16" y2="7.01"/></svg>
+      Cadastro
+    </span>
+    <h1>{{ 'Editar empresa' if modo == 'editar' else 'Nova empresa' }}</h1>
+    <p>Regime, faturamento e composição de custos — usados pelo motor de cálculo na simulação.</p>
+  </div>
+  <div class="acoes">
+    <a href="/empresas" class="botao-secundario">← Voltar</a>
+  </div>
+</div>
+
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
 <div class="grade-cadastro">

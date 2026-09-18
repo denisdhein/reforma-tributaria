@@ -295,6 +295,38 @@ contida num arquivo só):
   celular (375px) — a barra lateral vira topo horizontal com rótulos
   escondidos, só ícone, sem quebrar a navegação.
 
+**Quarta rodada — pente fino em todas as telas (mesmo dia).**
+As três rodadas anteriores focaram na casca compartilhada (`base.html`);
+essa rodada entra em cada template — as 8 telas do sistema (login,
+simular, empresas, cadastro de empresa, cenários, novo cenário,
+histórico, detalhe do histórico, perfil):
+
+- **Cabeçalho de página**: novo padrão `.cabecalho-pagina` (ícone +
+  categoria em caixa alta + título grande + descrição, com ações à
+  direita) — o título sai de dentro do primeiro card e vira hierarquia
+  de página de verdade, como em produto de SaaS. Aplicado nas 7 telas
+  autenticadas.
+- **Estado vazio**: listas sem registro (Empresas, Histórico) ganharam
+  um bloco centralizado com ícone, texto e botão de ação, em vez de uma
+  linha cinza solta que passava despercebida.
+- **KPIs do resultado**: os indicadores (carga atual/simulada/variação)
+  ganharam número maior, leve elevação no hover, e a variação virou uma
+  pílula colorida com seta (▲ aumento / ▼ redução / ponto neutro) em vez
+  de reusar o mesmo "selo" genérico das tabelas.
+- **Selos diferenciados**: "oficial", "trava legal" e "hipótese sua" nos
+  cenários agora têm cores distintas (antes só "hipótese sua" se
+  diferenciava, via estilo inline).
+- **Gráfico de barras**: grade horizontal sutil atrás das barras, pra dar
+  referência de escala sem precisar de eixo numerado.
+- **Login**: reconstruído como tela de autenticação de verdade — card
+  centralizado na vertical, marca própria no topo, botão de largura
+  total. Antes era um card solto encostado no alto da página.
+- **Entrada suave**: cards recebem uma animação curta de fade + leve
+  subida ao carregar a página (`prefers-reduced-motion` respeitado).
+- Testado visualmente em todas as 8 telas, tema claro e escuro, desktop
+  e mobile (375px) — sem erros de console, sem quebra de layout, 47
+  testes automatizados continuam passando (mudança é só HTML/CSS).
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e

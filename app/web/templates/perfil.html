@@ -2,11 +2,21 @@
 {% block titulo %}Perfil · Reforma Tributária{% endblock %}
 {% block conteudo %}
 
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.5 4.5-5.3 7.5-5.3s5.9 1.8 7.5 5.3"/></svg>
+      Conta
+    </span>
+    <h1>Meu perfil</h1>
+    <p>Nome, foto e dados da conta usados na identificação do usuário no sistema.</p>
+  </div>
+</div>
+
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 {% if sucesso %}<div class="sucesso">{{ sucesso }}</div>{% endif %}
 
 <section class="cartao" style="max-width: 480px;">
-  <h2>Meu perfil</h2>
   <form method="post" action="/perfil" enctype="multipart/form-data">
     <div class="perfil-foto-campo">
       {% if usuario.foto_nome %}

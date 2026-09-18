@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block titulo %}Entrar · Reforma Tributária{% endblock %}
 {% block conteudo %}
-<section class="cartao" style="max-width: 380px; margin: 2rem auto;">
+<div class="tela-login">
+<section class="cartao cartao-login">
+  <div class="marca-login">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6h-2" />
+      <path d="M14 3v5a1 1 0 0 0 1 1h5" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+    </svg>
+    <span>Reforma Tributária</span>
+  </div>
   <h2>Entrar</h2>
   {% if erro %}
     <div class="erro" style="margin-bottom: 1rem;">{{ erro }}</div>
@@ -15,11 +25,12 @@
       <label for="senha">Senha</label>
       <input type="password" id="senha" name="senha" required>
     </div>
-    <button type="submit">Entrar</button>
+    <button type="submit" style="width: 100%;">Entrar</button>
   </form>
   <p class="rodape-meta">
     Acesso por conta provisionada — não há cadastro público. Fale com o administrador
     do sistema para receber um usuário.
   </p>
 </section>
+</div>
 {% endblock %}
