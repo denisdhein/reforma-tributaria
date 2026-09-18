@@ -225,6 +225,45 @@ CSS custom properties, então um único arquivo alcança todas as telas):
   computados das variáveis CSS conferidos direto no DOM pra garantir que
   os tokens corretos estavam sendo aplicados.
 
+**Segunda rodada — componentes, não só cor (mesmo dia).** A primeira
+rodada só trocou tokens de cor/fonte, sem repensar a forma dos próprios
+controles — a mudança mais notada numa interface. Essa rodada mexe nos
+componentes de verdade, ainda só em `base.html`:
+
+- **Botões** (`button`, `.botao-link`): saíram do preenchimento chapado
+  pra um gradiente sutil (`linear-gradient` de cima pra baixo na própria
+  cor do tema) com sombra colorida (na cor do acento, não cinza genérico)
+  e um leve "levantar" no hover (`translateY(-1px)` + sombra maior),
+  voltando ao lugar no clique. `.botao-secundario` ganhou o mesmo
+  levantar e um fundo sutil no hover em vez de só trocar a borda.
+- **Campos** (`select`, `input`): borda mais grossa, `border-radius`
+  maior, mais respiro interno, anel de foco mais visível
+  (`box-shadow` de 4px em vez de 3px). `<select>` perdeu a seta
+  padrão do navegador — agora é uma seta SVG embutida via
+  `background-image` (`data:image/svg+xml`), com uma versão pro tema
+  claro e outra pro escuro (a cor do traço não muda sozinha, então
+  precisa de duas versões, uma em cada bloco de tema).
+- **Rádios** (`.radios label`): de bolinha nativa + texto pra um
+  controle segmentado — cada opção vira uma "pill" com borda, e a
+  selecionada preenche com a cor do acento (`:has(input:checked)`,
+  suportado nos navegadores modernos, sem precisar de JS). Checkboxes e
+  rádios em geral ganharam `accent-color` na cor do tema, pra não ficarem
+  cinza/azul do sistema operacional destoando do resto.
+- **Bug achado e corrigido na hora**: o rótulo em maiúsculas com
+  letter-spacing que a primeira rodada deu pros labels de campo
+  (`.campo label`) vazou pros rádios e pro checkbox "remover foto atual"
+  — os dois ficam estruturalmente dentro de uma `div.campo` no HTML (pra
+  herdar o espaçamento), então `.campo label` (seletor por descendência)
+  também batia neles. O resultado: "Comparar único e híbrido" virava
+  "COMPARAR ÚNICO E HÍBRIDO" sem intenção. Corrigido resetando
+  `text-transform` e `letter-spacing` explicitamente em `.radios label` e
+  `.chk-remover` — CSS não herda automaticamente as propriedades que uma
+  regra mais específica não redeclara, então bastou declarar de volta.
+- Testado visualmente de novo: login, formulário de simulação (rádios
+  segmentados, select com seta customizada), listagem de empresas
+  (botões secundários) e o formulário de cadastro de empresa (o mais
+  cheio de campos do sistema).
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
