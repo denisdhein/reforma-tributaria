@@ -23,16 +23,19 @@
   {% set c = resultado.comparacao %}
   {% set m = resultado.meta %}
 
-  <p class="no-imprimir" style="text-align: right;">
-    <button type="button" class="botao-secundario" onclick="window.print()">Imprimir / Exportar PDF</button>
-  </p>
+  <div class="no-imprimir" style="display: flex; justify-content: flex-end;">
+    <button type="button" class="botao-secundario" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.35rem;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir / Exportar PDF
+    </button>
+  </div>
 
   <section class="cartao">
     <h2>Resultado — {{ m.razao_social }}</h2>
     <p class="rodape-meta">
       Regime: {{ m.regime }} · Modo de cálculo: {{ m.modo_calculo }} · Ano simulado: {{ m.ano_base }} ·
       Cenário: {{ cenario.nome }}
-      {% if cenario.tipo == 'usuario' %}<span class="selo" style="background: var(--cor-aviso-bg); color: var(--cor-aviso-texto);">hipótese sua</span>{% endif %}
+      {% if cenario.tipo == 'usuario' %}<span class="selo selo-aviso">hipótese sua</span>{% endif %}
       (IBS {{ m.premissas.aliquota_ibs|pctfmt(2) }} + CBS {{ m.premissas.aliquota_cbs|pctfmt(2) }}) ·
       Motor v{{ m.motor_versao }}
     </p>
@@ -52,7 +55,7 @@
         <div class="rotulo">Variação</div>
         <div class="valor">
           {{ c.diferenca_rs|moeda }}
-          <span class="selo">{{ c.direcao }}</span>
+          <span class="delta">{{ c.direcao }}</span>
         </div>
         <div class="rodape-meta">{{ c.diferenca_pct|pctfmt(2) }} sobre a carga atual</div>
       </div>

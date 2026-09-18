@@ -3,17 +3,29 @@
 
 {% block conteudo %}
 
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+      Registro
+    </span>
+    <h1>Histórico de simulações</h1>
+    <p>Toda simulação rodada em "Simular" fica salva aqui, com os parâmetros usados no cálculo.</p>
+  </div>
+</div>
+
 {% if erro %}
   <div class="erro">{{ erro }}</div>
 {% endif %}
 
 <section class="cartao">
-  <h2>Histórico de simulações</h2>
-
   {% if not simulacoes %}
-    <p class="rodape-meta">
-      Nenhuma simulação salva ainda. Toda simulação rodada em "Simular" entra aqui automaticamente.
-    </p>
+    <div class="estado-vazio">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+      <strong>Nenhuma simulação salva ainda</strong>
+      <p>Toda simulação rodada em "Simular" entra aqui automaticamente.</p>
+      <a href="/" class="botao-link">Ir para Simular</a>
+    </div>
   {% else %}
     <div style="overflow-x: auto;">
       <table>

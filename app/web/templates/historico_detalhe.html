@@ -3,10 +3,20 @@
 
 {% block conteudo %}
 
-<p class="no-imprimir">
-  <a class="botao-link" href="/historico">← Voltar ao histórico</a>
-  <a class="botao-secundario" href="/?repetir={{ simulacao.id }}">Simular novamente (editar parâmetros)</a>
-</p>
+<div class="cabecalho-pagina no-imprimir">
+  <div class="titulo-bloco">
+    <span class="eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+      Simulação #{{ simulacao.id }}
+    </span>
+    <h1>{{ simulacao.empresa.razao_social }}</h1>
+    <p>Ano {{ simulacao.ano_base }} · salva em {{ simulacao.criada_em.strftime('%d/%m/%Y %H:%M') }}.</p>
+  </div>
+  <div class="acoes">
+    <a class="botao-secundario" href="/historico">← Voltar ao histórico</a>
+    <a class="botao-link" href="/?repetir={{ simulacao.id }}">Simular novamente</a>
+  </div>
+</div>
 
 {% include "_resultado.html" %}
 

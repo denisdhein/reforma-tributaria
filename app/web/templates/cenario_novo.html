@@ -2,16 +2,27 @@
 {% block titulo %}Novo cenário · Reforma Tributária{% endblock %}
 {% block conteudo %}
 
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="12" r="2.4"/><path d="M8 7 16 11"/><path d="M8 17 16 13"/></svg>
+      Hipóteses
+    </span>
+    <h1>Novo cenário de alíquota</h1>
+    <p>
+      Sua própria hipótese de alíquota de referência do IBS e da CBS. Não precisa ter fundamento
+      oficial — é exatamente para isso que serve: testar "e se" enquanto a reforma ainda não tem
+      número fechado. Fica visível só para o seu tenant, ao lado dos cenários oficiais.
+    </p>
+  </div>
+  <div class="acoes">
+    <a href="/cenarios" class="botao-secundario">← Voltar</a>
+  </div>
+</div>
+
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
 <section class="cartao" style="max-width: 520px;">
-  <h2>Novo cenário de alíquota</h2>
-  <p class="rodape-meta">
-    Sua própria hipótese de alíquota de referência do IBS e da CBS. Não precisa ter fundamento
-    oficial — é exatamente para isso que serve: testar "e se" enquanto a reforma ainda não tem
-    número fechado. Fica visível só para o seu tenant, ao lado dos cenários oficiais.
-  </p>
-
   <form method="post" action="/cenarios/novo">
     <div class="campo">
       <label for="nome">Nome do cenário *</label>

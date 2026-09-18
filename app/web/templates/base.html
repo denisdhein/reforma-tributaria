@@ -492,6 +492,103 @@
     .coluna-ajuda { position: static; }
   }
 
+  /* Cabeçalho de página: título fora do cartão, no nível da própria
+     main — separa "chrome da página" de "conteúdo", em vez de todo
+     título viver dentro do primeiro card (o que deixava as telas de
+     lista/cadastro com aparência de formulário solto, sem hierarquia
+     de página de verdade). */
+  .cabecalho-pagina {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .cabecalho-pagina .titulo-bloco { display: flex; flex-direction: column; gap: 0.4rem; max-width: 62ch; }
+  .cabecalho-pagina .eyebrow {
+    font-family: "IBM Plex Sans", sans-serif; font-size: 0.74rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.09em; color: var(--cor-primaria);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .cabecalho-pagina .eyebrow svg { flex-shrink: 0; }
+  .cabecalho-pagina h1 {
+    margin: 0; font-size: 1.55rem; font-weight: 600; letter-spacing: -0.012em; line-height: 1.2;
+  }
+  .cabecalho-pagina p { margin: 0; color: var(--cor-texto-suave); font-size: 0.88rem; line-height: 1.5; }
+  .cabecalho-pagina .acoes { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+
+  /* Estado vazio: telas de lista sem registro nenhum ganham um bloco
+     centralizado com ícone + CTA em vez de uma linha solta de texto
+     cinza, que passava despercebida. */
+  .estado-vazio {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 0.5rem; padding: 3rem 1.5rem 2.5rem;
+  }
+  .estado-vazio svg { color: var(--cor-borda); margin-bottom: 0.5rem; }
+  .estado-vazio strong { color: var(--cor-texto); font-size: 1rem; font-weight: 600; }
+  .estado-vazio p { margin: 0; color: var(--cor-texto-suave); font-size: 0.88rem; max-width: 38ch; }
+  .estado-vazio .botao-link, .estado-vazio .botao-secundario { margin-top: 0.6rem; }
+
+  /* Variantes de selo — antes "trava legal" e "oficial" ficavam
+     visualmente idênticos (mesma cor de acento), e "hipótese sua"
+     dependia de estilo inline espalhado pelos templates. */
+  .selo-neutro { background: var(--cor-superficie-alt); color: var(--cor-texto-suave); }
+  .selo-aviso { background: var(--cor-aviso-bg); color: var(--cor-aviso-texto); }
+
+  /* Indicadores (KPIs do resultado): número maior, leve elevação no
+     hover, e a variação vira uma pílula com seta em vez de um "selo"
+     genérico igual ao usado pra badges de tabela. */
+  .indicador {
+    padding: 1.15rem 1.25rem;
+    border-radius: 14px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .indicador:hover { transform: translateY(-2px); box-shadow: var(--sombra); }
+  .indicador .valor { font-size: 1.65rem; }
+  .indicador .delta {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.76rem; font-weight: 600;
+    padding: 0.15rem 0.5rem 0.15rem 0.45rem; border-radius: 999px;
+    margin-left: 0.5rem; vertical-align: middle;
+  }
+  .indicador.aumento .delta { background: color-mix(in srgb, var(--cor-perigo) 18%, transparent); color: var(--cor-perigo); }
+  .indicador.aumento .delta::before { content: "▲"; font-size: 0.65rem; }
+  .indicador.reducao .delta { background: color-mix(in srgb, var(--cor-sucesso) 18%, transparent); color: var(--cor-sucesso); }
+  .indicador.reducao .delta::before { content: "▼"; font-size: 0.65rem; }
+  .indicador.neutro .delta { background: var(--cor-superficie); color: var(--cor-texto-suave); }
+  .indicador.neutro .delta::before { content: "●"; font-size: 0.55rem; }
+
+  /* Grade sutil atrás das barras do gráfico — dá referência de escala
+     sem precisar de eixo numerado. */
+  .grafico-barras {
+    background-image: repeating-linear-gradient(
+      to top,
+      color-mix(in srgb, var(--cor-borda) 70%, transparent) 0,
+      color-mix(in srgb, var(--cor-borda) 70%, transparent) 1px,
+      transparent 1px, transparent 25%
+    );
+  }
+
+  /* Login: card centralizado verticalmente na área de conteúdo, com
+     marca própria no topo — antes era só um card solto encostado no
+     alto da página, com a barra lateral quase vazia ao lado. */
+  .tela-login { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 6rem); }
+  .cartao-login { max-width: 400px; width: 100%; }
+  .cartao-login .marca-login {
+    display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.4rem;
+  }
+  .cartao-login .marca-login svg { color: var(--cor-primaria); flex-shrink: 0; }
+  .cartao-login .marca-login span {
+    font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600; font-size: 1.05rem;
+  }
+  .cartao-login h2 { margin-bottom: 0.3rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cartao { animation: cartao-entrada .3s ease both; }
+    @keyframes cartao-entrada {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+
   /* RF07 — exportar/imprimir: sem gerador de PDF no servidor, o próprio
      "Salvar como PDF" do navegador resolve (zero dependência nova, mesmo
      espírito de "sem lib extra" do resto do projeto). Força paleta clara
