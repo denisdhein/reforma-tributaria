@@ -264,6 +264,37 @@ componentes de verdade, ainda só em `base.html`:
   (botões secundários) e o formulário de cadastro de empresa (o mais
   cheio de campos do sistema).
 
+**Terceira rodada — estrutura, não só componente (mesmo dia).** Nem cor
+nem forma de componente bastam se o layout inteiro continua sendo "barra
+no topo + card embaixo" — a mudança precisava atingir a estrutura da
+página. Ainda tudo em `base.html` (confirmado por grep que nenhum outro
+template referencia as classes de header/nav, então a troca ficou
+contida num arquivo só):
+
+- **Navegação lateral**: o `<header class="topo">` horizontal virou
+  `<aside class="lateral">` — barra fixa à esquerda, sempre escura (nas
+  duas paletas, mesmo raciocínio do cabeçalho antigo), com marca + ícone
+  no topo, links de navegação com ícone SVG desenhado à mão (traço,
+  `currentColor`, estilo Feather) no meio, e tema/usuário/sair no rodapé.
+  Abaixo de 880px de largura a mesma marcação vira barra horizontal no
+  topo (só muda `flex-direction` num `@media`, sem duplicar HTML nem
+  JS de menu hambúrguer).
+- **Fundo com profundidade**: `body` ganhou dois `radial-gradient` bem
+  sutis (opacidade baixa, cor do acento) posicionados nos cantos, atrás
+  da cor sólida de fundo — textura sem ficar chamativo.
+- **Identidade de card**: `.cartao` ganhou uma borda superior de 3px na
+  cor do acento, pra parar de parecer uma caixa branca genérica.
+- **Tratamento de tabela**: zebra striping (`tbody tr:nth-child(even)`),
+  destaque de linha no hover, e o cabeçalho da tabela ganhou uma borda
+  inferior de 2px na cor do acento em vez do cinza padrão.
+- **Sem neon**: o `box-shadow` colorido dos botões (herdado da segunda
+  rodada) foi reduzido — menos blur, menos opacidade — pra manter a
+  profundidade sem virar brilho/glow, mantendo a legibilidade.
+- Testado visualmente: desktop (tema claro e escuro) nas telas de
+  simular, empresas e perfil, e o colapso responsivo em viewport de
+  celular (375px) — a barra lateral vira topo horizontal com rótulos
+  escondidos, só ícone, sem quebrar a navegação.
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
