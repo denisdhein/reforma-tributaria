@@ -339,6 +339,40 @@ cenários, novo cenário, histórico, detalhe do histórico, perfil):
   e mobile (375px) — sem erros de console, sem quebra de layout, 47
   testes automatizados continuam passando (mudança é só HTML/CSS).
 
+**Quinta rodada — achatar em vez de decorar (mesmo dia).** Feedback:
+depois da quarta rodada, o Denis achou que "continua igual" à terceira —
+pedi pra ele comparar com o quê especificamente, e a resposta foi clara:
+igual à v3, e a direção que ele queria era **visual mais minimalista/
+premium** (referência: Linear/Stripe/Vercel), não mais elementos. Isso
+inverteu o approach das rodadas 1-4, que foram todas "adicionar" (cor,
+forma de componente, estrutura, cabeçalho de página) — essa rodada é
+"tirar": menos sombra, menos gradiente, menos cor decorativa, mais
+espaço em branco, tipografia carregando mais peso. Só `base.html`:
+
+- **Fundo**: removidos os dois `radial-gradient` da rodada 3 — volta a
+  ser cor sólida chapada. A "textura" que parecia dar profundidade
+  também deixava a tela mais carregada.
+- **Botões**: de gradiente + sombra colorida (glow) pra preenchimento
+  sólido chapado, sem sombra nenhuma — o botão secundário também trocou
+  o texto colorido por texto neutro (só fica colorido no hover).
+- **Cards**: perderam a borda superior de 3px na cor de acento (era um
+  floreio) e o box-shadow padrão (elevação só aparece agora no hover dos
+  indicadores). Raio de borda reduzido de 14px pra 10px em cards, 10px
+  pra 7px em botões/campos — visual mais anguloso, menos "friendly app".
+- **Tabela**: perdeu o zebra striping e o sublinhado colorido no
+  cabeçalho — virou hairline neutro, hover mais discreto.
+- **Gráfico de barras**: removida a grade horizontal sutil (mais um
+  floreio decorativo que não sobreviveu ao corte).
+- **Cabeçalho de página**: ícone do "eyebrow" escondido (só texto),
+  título maior (1,55rem → 1,75rem) e mais leve (peso 600 → 500) — typo
+  grande e fina em vez de badge+ícone chamando atenção.
+- **Espaço**: `main` ganhou mais respiro (padding 2,1rem → 2,6rem, gap
+  1,25rem → 1,75rem) — menos elementos por área visível, cada um com
+  mais ar ao redor.
+- Testado de novo nas telas principais (simular, empresas, resultado,
+  cenários, login), tema claro/escuro e mobile — 47 testes continuam
+  passando (mudança é só CSS).
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
