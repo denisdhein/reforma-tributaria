@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}Reforma Tributária · Simulador{% endblock %}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
 <script>
   // Aplica o tema salvo antes do primeiro paint — sem isso a página pisca
   // clara e só depois escurece.
@@ -16,74 +16,103 @@
   })();
 </script>
 <style>
+  /* Duas linguagens visuais, uma por tema — não só claro/escuro do
+     mesmo design, dois DESIGNS diferentes (escolhidos pelo Denis a
+     partir de duas opções comparadas lado a lado): claro = editorial
+     (creme, serifa, terracota), escuro = dark precision (quase preto
+     neutro, geométrica, índigo). A barra lateral também troca de cor
+     com o tema agora — antes ficava sempre escura nas duas paletas. */
   :root {
-    --cor-fundo: #f4f6f3;
+    --cor-fundo: #faf7f0;
     --cor-superficie: #ffffff;
-    --cor-superficie-alt: #eceef0;
-    --cor-texto: #16211c;
-    --cor-texto-suave: #57645d;
-    --cor-borda: #dce1db;
-    --cor-primaria: #0e6e86;
-    --cor-primaria-fraca: #e1f1f4;
-    --cor-botao-hover: #0a5568;
-    --cor-sucesso: #1f7a4d;
-    --cor-sucesso-fraca: #eaf6ee;
-    --cor-perigo: #b33a2e;
-    --cor-perigo-fraca: #fbeae7;
-    --cor-aviso-bg: #fcf3e0;
+    --cor-superficie-alt: #f2ede0;
+    --cor-texto: #1c1a16;
+    --cor-texto-suave: #6b6558;
+    --cor-borda: #e4ded0;
+    --cor-primaria: #b5502e;
+    --cor-primaria-fraca: #f6e6de;
+    --cor-botao-hover: #9c4326;
+    --cor-sucesso: #2f7a4d;
+    --cor-sucesso-fraca: #e8f3e7;
+    --cor-perigo: #ba2727;
+    --cor-perigo-fraca: #fbe8e6;
+    --cor-aviso-bg: #f7ecd7;
     --cor-aviso-texto: #8a5a0a;
-    --cor-aviso-borda: #f0d9a0;
-    --cor-cabecalho: #10201d;
-    --cor-lateral-acento: #4fd6dc;
-    --sombra: 0 1px 2px rgba(16, 32, 29, 0.06), 0 2px 12px rgba(16, 32, 29, 0.05);
+    --cor-aviso-borda: #ecd8a8;
+    --cor-cabecalho: #faf7f0;
+    --cor-cabecalho-texto: #1c1a16;
+    --cor-cabecalho-texto-suave: #8a8375;
+    --cor-cabecalho-borda: #e4ded0;
+    --font-titulo: "Fraunces", Georgia, serif;
+    --font-corpo: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --raio-cartao: 6px;
+    --raio-controle: 4px;
+    --sombra: 0 1px 2px rgba(28, 26, 22, 0.05), 0 2px 12px rgba(28, 26, 22, 0.05);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --cor-fundo: #0e1512; --cor-superficie: #17201c; --cor-superficie-alt: #1f2924;
-      --cor-texto: #e7ece7; --cor-texto-suave: #9aaca2; --cor-borda: #2b362f;
-      --cor-primaria: #3fc0d6; --cor-primaria-fraca: #163339; --cor-botao-hover: #63d2e4;
-      --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #123322;
-      --cor-perigo: #e2786a; --cor-perigo-fraca: #3a231d;
-      --cor-aviso-bg: #362a12; --cor-aviso-texto: #e3ac4c; --cor-aviso-borda: #4a3a18;
-      --cor-cabecalho: #0a1210;
+      --cor-fundo: #0b0b0d; --cor-superficie: #131316; --cor-superficie-alt: #18181b;
+      --cor-texto: #e4e4e7; --cor-texto-suave: #9a9aa1; --cor-borda: #232326;
+      --cor-primaria: #6366f1; --cor-primaria-fraca: #1e1e35; --cor-botao-hover: #818cf8;
+      --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #10281c;
+      --cor-perigo: #e2665a; --cor-perigo-fraca: #341915;
+      --cor-aviso-bg: #2e2410; --cor-aviso-texto: #d9a34a; --cor-aviso-borda: #453518;
+      --cor-cabecalho: #0b0b0d;
+      --cor-cabecalho-texto: #e4e4e7;
+      --cor-cabecalho-texto-suave: #78787f;
+      --cor-cabecalho-borda: #232326;
+      --font-titulo: "Space Grotesk", "IBM Plex Sans", sans-serif;
+      --font-corpo: "Space Grotesk", "IBM Plex Sans", -apple-system, sans-serif;
+      --raio-cartao: 8px;
+      --raio-controle: 6px;
       --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
   }
   :root[data-theme="dark"] {
-    --cor-fundo: #0e1512; --cor-superficie: #17201c; --cor-superficie-alt: #1f2924;
-    --cor-texto: #e7ece7; --cor-texto-suave: #9aaca2; --cor-borda: #2b362f;
-    --cor-primaria: #3fc0d6; --cor-primaria-fraca: #163339; --cor-botao-hover: #63d2e4;
-    --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #123322;
-    --cor-perigo: #e2786a; --cor-perigo-fraca: #3a231d;
-    --cor-aviso-bg: #362a12; --cor-aviso-texto: #e3ac4c; --cor-aviso-borda: #4a3a18;
-    --cor-cabecalho: #0a1210;
+    --cor-fundo: #0b0b0d; --cor-superficie: #131316; --cor-superficie-alt: #18181b;
+    --cor-texto: #e4e4e7; --cor-texto-suave: #9a9aa1; --cor-borda: #232326;
+    --cor-primaria: #6366f1; --cor-primaria-fraca: #1e1e35; --cor-botao-hover: #818cf8;
+    --cor-sucesso: #4cbe84; --cor-sucesso-fraca: #10281c;
+    --cor-perigo: #e2665a; --cor-perigo-fraca: #341915;
+    --cor-aviso-bg: #2e2410; --cor-aviso-texto: #d9a34a; --cor-aviso-borda: #453518;
+    --cor-cabecalho: #0b0b0d;
+    --cor-cabecalho-texto: #e4e4e7;
+    --cor-cabecalho-texto-suave: #78787f;
+    --cor-cabecalho-borda: #232326;
+    --font-titulo: "Space Grotesk", "IBM Plex Sans", sans-serif;
+    --font-corpo: "Space Grotesk", "IBM Plex Sans", -apple-system, sans-serif;
+    --raio-cartao: 8px;
+    --raio-controle: 6px;
     --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-corpo);
     background: var(--cor-fundo);
     color: var(--cor-texto);
     line-height: 1.55;
     transition: background-color .15s ease, color .15s ease;
   }
-  h1, h2, h3, .cartao h2 { font-family: "IBM Plex Serif", Georgia, serif; }
+  h1, h2, h3, .cartao h2 { font-family: var(--font-titulo); }
   .mono, .valor, .indicador .valor, .grafico-valor, td.num, th.num, .selo {
     font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Casca do app: barra lateral fixa (sempre escura, nas duas paletas —
-     mesmo raciocínio do header antigo) + área de conteúdo. Abaixo de
-     880px vira barra horizontal no topo — mesma marcação, só o flex-
-     direction muda, sem duplicar HTML pra versão mobile. */
+  /* Casca do app: barra lateral fixa + área de conteúdo. A cor da
+     lateral agora segue o tema (creme no claro, quase-preto no
+     escuro) — as duas linguagens visuais (editorial clara / dark
+     precision) têm cada uma sua própria barra, não uma barra escura
+     fixa por cima de qualquer paleta. Abaixo de 880px vira barra
+     horizontal no topo — mesma marcação, só o flex-direction muda. */
   .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
   .lateral {
     width: 244px; flex-shrink: 0;
     background: var(--cor-cabecalho);
-    color: #fff;
+    color: var(--cor-cabecalho-texto);
+    border-right: 1px solid var(--cor-cabecalho-borda);
     display: flex;
     flex-direction: column;
     padding: 1.4rem 1rem;
@@ -92,36 +121,41 @@
     height: 100vh;
     overflow-y: auto;
     z-index: 10;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
   }
   .marca {
     display: flex; align-items: center; gap: 0.7rem;
     padding: 0.4rem 0.6rem 1.6rem;
-    color: #fff;
+    color: var(--cor-cabecalho-texto);
   }
-  .marca svg { flex-shrink: 0; color: var(--cor-lateral-acento); }
-  .marca-texto { font-family: "IBM Plex Serif", Georgia, serif; font-size: 0.95rem; font-weight: 600; line-height: 1.25; }
+  .marca svg { flex-shrink: 0; color: var(--cor-primaria); }
+  .marca-texto { font-family: var(--font-titulo); font-size: 0.95rem; font-weight: 600; line-height: 1.25; }
   .nav-lateral { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; }
   .nav-lateral a {
     display: flex; align-items: center; gap: 0.85rem;
     padding: 0.6rem 0.75rem;
-    border-radius: 6px;
+    border-radius: var(--raio-controle);
     border-left: 2px solid transparent;
-    color: #aebdb6; text-decoration: none;
+    color: var(--cor-cabecalho-texto-suave); text-decoration: none;
     font-size: 0.87rem; font-weight: 500;
     transition: background-color .15s ease, color .15s ease, border-color .15s ease;
   }
   .nav-lateral a svg { flex-shrink: 0; opacity: 0.85; }
-  .nav-lateral a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-  .nav-lateral a.ativo {
-    background: rgba(255, 255, 255, 0.08);
-    border-left-color: var(--cor-lateral-acento);
-    color: #fff;
+  .nav-lateral a:hover {
+    background: color-mix(in srgb, var(--cor-cabecalho-texto) 6%, transparent);
+    color: var(--cor-cabecalho-texto);
   }
-  .nav-lateral a.ativo svg { opacity: 1; color: var(--cor-lateral-acento); }
+  .nav-lateral a.ativo {
+    background: var(--cor-primaria-fraca);
+    border-left-color: var(--cor-primaria);
+    color: var(--cor-primaria);
+    font-weight: 600;
+  }
+  .nav-lateral a.ativo svg { opacity: 1; color: var(--cor-primaria); }
   .lateral-rodape {
     display: flex; flex-direction: column; gap: 0.6rem;
     padding-top: 1rem; margin-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--cor-cabecalho-borda);
   }
   .lateral-rodape form { margin: 0; }
 
@@ -144,15 +178,15 @@
     .marca-texto { display: none; }
     .nav-lateral { flex-direction: row; flex: 1; gap: 0.2rem; }
     .nav-lateral a { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 7px 7px 0 0; }
-    .nav-lateral a.ativo { border-left-color: transparent; border-bottom-color: var(--cor-lateral-acento); }
-    .lateral-rodape { flex-direction: row; padding-top: 0; margin-top: 0; border-top: none; border-left: 1px solid rgba(255, 255, 255, 0.1); padding-left: 0.75rem; }
+    .nav-lateral a.ativo { border-left-color: transparent; border-bottom-color: var(--cor-primaria); }
+    .lateral-rodape { flex-direction: row; padding-top: 0; margin-top: 0; border-top: none; border-left: 1px solid var(--cor-cabecalho-borda); padding-left: 0.75rem; }
     main { padding: 1.25rem; }
   }
 
   .cartao {
     background: var(--cor-superficie);
     border: 1px solid var(--cor-borda);
-    border-radius: 10px;
+    border-radius: var(--raio-cartao);
     padding: 1.7rem 1.9rem;
     transition: background-color .15s ease, border-color .15s ease;
   }
@@ -166,7 +200,7 @@
   .campo { margin-bottom: 1.25rem; }
   .campo label {
     display: block;
-    font-family: "IBM Plex Sans", sans-serif;
+    font-family: var(--font-corpo);
     font-size: 0.78rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -178,8 +212,8 @@
     width: 100%;
     padding: 0.68rem 0.85rem;
     border: 1px solid var(--cor-borda);
-    border-radius: 7px;
-    font-family: "IBM Plex Sans", sans-serif;
+    border-radius: var(--raio-controle);
+    font-family: var(--font-corpo);
     font-size: 0.95rem;
     background: var(--cor-superficie);
     color: var(--cor-texto);
@@ -191,15 +225,15 @@
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     background-size: 13px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2357645d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236b6558' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
     cursor: pointer;
   }
   :root[data-theme="dark"] select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aaca2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239a9aa1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aaca2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239a9aa1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5 10 13 15 7.5'/%3E%3C/svg%3E");
     }
   }
   select:hover, input:hover { border-color: color-mix(in srgb, var(--cor-primaria) 45%, var(--cor-borda)); }
@@ -220,8 +254,8 @@
     color: #fff;
     border: 1px solid var(--cor-primaria);
     padding: 0.68rem 1.4rem;
-    border-radius: 7px;
-    font-family: "IBM Plex Sans", sans-serif;
+    border-radius: var(--raio-controle);
+    font-family: var(--font-corpo);
     font-size: 0.92rem;
     font-weight: 600;
     letter-spacing: 0.003em;
@@ -241,7 +275,8 @@
     background: var(--cor-primaria);
     color: #fff; text-decoration: none;
     border: 1px solid var(--cor-primaria);
-    padding: 0.62rem 1.2rem; border-radius: 7px; font-size: 0.88rem; font-weight: 600;
+    padding: 0.62rem 1.2rem; border-radius: var(--raio-controle); font-size: 0.88rem; font-weight: 600;
+    font-family: var(--font-corpo);
     transition: background-color .12s ease, border-color .12s ease;
   }
   .botao-link:hover { background: var(--cor-botao-hover); border-color: var(--cor-botao-hover); }
@@ -249,7 +284,8 @@
     display: inline-block;
     background: transparent; color: var(--cor-texto);
     border: 1px solid var(--cor-borda);
-    padding: 0.62rem 1.2rem; border-radius: 7px; font-size: 0.88rem; font-weight: 600;
+    padding: 0.62rem 1.2rem; border-radius: var(--raio-controle); font-size: 0.88rem; font-weight: 600;
+    font-family: var(--font-corpo);
     cursor: pointer;
     transition: background-color .12s ease, border-color .12s ease;
   }
@@ -265,7 +301,7 @@
   .radios { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
   .radios label {
     display: flex; align-items: center; gap: 0.5rem;
-    font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 0.87rem;
+    font-family: var(--font-corpo); font-weight: 500; font-size: 0.87rem;
     text-transform: none; letter-spacing: normal;
     color: var(--cor-texto-suave);
     border: 1.5px solid var(--cor-borda); border-radius: 999px;
@@ -289,13 +325,13 @@
   .erro { background: var(--cor-perigo-fraca); color: var(--cor-perigo); border-color: color-mix(in srgb, var(--cor-perigo) 30%, transparent); }
   .sucesso { background: var(--cor-sucesso-fraca); color: var(--cor-sucesso); border-color: color-mix(in srgb, var(--cor-sucesso) 30%, transparent); }
   .indicador {
-    border-radius: 8px;
+    border-radius: var(--raio-controle);
     padding: 1rem 1.1rem;
     background: var(--cor-superficie-alt);
     border: 1px solid var(--cor-borda);
   }
   .indicador .rotulo {
-    font-family: "IBM Plex Sans", sans-serif;
+    font-family: var(--font-corpo);
     font-size: 0.76rem; color: var(--cor-texto-suave); text-transform: uppercase; letter-spacing: 0.04em;
   }
   .indicador .valor { font-size: 1.5rem; font-weight: 600; margin-top: 0.3rem; letter-spacing: -0.01em; }
@@ -349,8 +385,9 @@
   .botao-tema, .lateral-rodape button.sair {
     background: transparent;
     box-shadow: none;
-    border: 1px solid #3a4a44;
-    color: #fff;
+    border: 1px solid var(--cor-cabecalho-borda);
+    color: var(--cor-cabecalho-texto);
+    font-family: var(--font-corpo);
   }
   .botao-tema {
     padding: 0.4rem 0.6rem;
@@ -360,21 +397,21 @@
     align-self: flex-start;
   }
   .botao-tema:hover, .lateral-rodape button.sair:hover {
-    background: #1c2925; transform: none; box-shadow: none;
+    background: color-mix(in srgb, var(--cor-cabecalho-texto) 8%, transparent);
+    border-color: var(--cor-cabecalho-borda);
   }
 
   .usuario-chip { display: flex; align-items: center; gap: 0.5rem; }
-  .usuario-chip .quem { font-family: "IBM Plex Sans", sans-serif; font-size: 0.78rem; color: #b9c7c1; line-height: 1.3; }
+  .usuario-chip .quem { font-family: var(--font-corpo); font-size: 0.78rem; color: var(--cor-cabecalho-texto-suave); line-height: 1.3; }
   .selo-admin {
     display: inline-block;
-    background: #7c5cbf; color: #fff; font-size: 0.62rem; font-weight: 700;
+    background: #c2478e; color: #fff; font-size: 0.62rem; font-weight: 700;
     padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.15rem; vertical-align: middle;
   }
   .lateral-rodape form { margin: 0; }
   .lateral-rodape button.sair {
     width: 100%;
-    color: #dce7e2;
-    padding: 0.5rem 0.7rem; font-size: 0.8rem; font-weight: 500; border-radius: 7px;
+    padding: 0.5rem 0.7rem; font-size: 0.8rem; font-weight: 500; border-radius: var(--raio-controle);
   }
 
   .avatar {
@@ -441,7 +478,7 @@
     transition: height .35s ease;
   }
   .grafico-rotulo {
-    font-family: "IBM Plex Sans", sans-serif;
+    font-family: var(--font-corpo);
     font-size: 0.78rem; color: var(--cor-texto-suave); margin-top: 0.6rem; text-align: center;
   }
 
@@ -472,7 +509,7 @@
   }
   .cabecalho-pagina .titulo-bloco { display: flex; flex-direction: column; gap: 0.4rem; max-width: 62ch; }
   .cabecalho-pagina .eyebrow {
-    font-family: "IBM Plex Sans", sans-serif; font-size: 0.72rem; font-weight: 600;
+    font-family: var(--font-corpo); font-size: 0.72rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.09em; color: var(--cor-texto-suave);
   }
   .cabecalho-pagina .eyebrow svg { display: none; }
@@ -532,7 +569,7 @@
   }
   .cartao-login .marca-login svg { color: var(--cor-primaria); flex-shrink: 0; }
   .cartao-login .marca-login span {
-    font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600; font-size: 1.05rem;
+    font-family: var(--font-titulo); font-weight: 600; font-size: 1.05rem;
   }
   .cartao-login h2 { margin-bottom: 0.3rem; }
 
@@ -555,16 +592,16 @@
        de @media print — achado testando com o tema escuro ativo. */
     :root {
       --cor-fundo: #ffffff !important; --cor-superficie: #ffffff !important;
-      --cor-superficie-alt: #eceef0 !important;
-      --cor-texto: #16211c !important; --cor-texto-suave: #57645d !important;
-      --cor-borda: #dce1db !important;
-      --cor-primaria: #0e6e86 !important; --cor-primaria-fraca: #e1f1f4 !important;
-      --cor-botao-hover: #0a5568 !important;
-      --cor-sucesso: #1f7a4d !important; --cor-sucesso-fraca: #eaf6ee !important;
-      --cor-perigo: #b33a2e !important; --cor-perigo-fraca: #fbeae7 !important;
-      --cor-aviso-bg: #fcf3e0 !important; --cor-aviso-texto: #8a5a0a !important;
-      --cor-aviso-borda: #f0d9a0 !important;
-      --cor-cabecalho: #10201d !important; --sombra: none !important;
+      --cor-superficie-alt: #f2ede0 !important;
+      --cor-texto: #1c1a16 !important; --cor-texto-suave: #6b6558 !important;
+      --cor-borda: #e4ded0 !important;
+      --cor-primaria: #b5502e !important; --cor-primaria-fraca: #f6e6de !important;
+      --cor-botao-hover: #9c4326 !important;
+      --cor-sucesso: #2f7a4d !important; --cor-sucesso-fraca: #e8f3e7 !important;
+      --cor-perigo: #ba2727 !important; --cor-perigo-fraca: #fbe8e6 !important;
+      --cor-aviso-bg: #f7ecd7 !important; --cor-aviso-texto: #8a5a0a !important;
+      --cor-aviso-borda: #ecd8a8 !important;
+      --cor-cabecalho: #ffffff !important; --sombra: none !important;
     }
     * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .no-imprimir { display: none !important; }

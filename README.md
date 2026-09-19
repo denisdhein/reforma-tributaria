@@ -359,6 +359,42 @@ Só `base.html`:
   cenários, login), tema claro/escuro e mobile — 47 testes continuam
   passando (mudança é só CSS).
 
+**Sexta rodada — duas identidades visuais, uma por tema (mesmo dia).**
+Duas direções visuais foram prototipadas lado a lado antes da
+implementação ("Opção A — editorial clara": creme, serifa, terracota,
+barra fina clara; "Opção B — dark precision": quase preto neutro,
+geométrica, índigo, cantos retos), com o tema claro do sistema usando a
+Opção A e o tema escuro usando a Opção B — cada modo com sua própria
+identidade, não só luz/escuridão do mesmo design. Tudo em `base.html`:
+
+- **Paleta**: a cor de acento agora muda de matiz entre temas, não só
+  de tom — terracota (`#b5502e`) no claro, índigo/violeta (`#6366f1`)
+  no escuro. Fundo claro vira creme (`#faf7f0`, não mais cinza-esverdeado
+  neutro); fundo escuro vira preto neutro (`#0b0b0d`, sem mais o matiz
+  verde que tinha desde a rodada 1).
+- **Tipografia**: título (h1/h2/`.cartao h2`) troca de fonte por tema via
+  token `--font-titulo` — Fraunces (serifa editorial) no claro, Space
+  Grotesk (geométrica) no escuro. Corpo/UI (`--font-corpo`) também troca:
+  IBM Plex Sans no claro, Space Grotesk no escuro — os elementos
+  interativos (rótulo, botão, campo) mudam de caráter tipográfico junto
+  com o tema, não só de cor.
+- **Barra lateral**: antes era sempre escura nas duas paletas (decisão da
+  rodada 3); agora acompanha o tema — clara com borda fina no modo claro,
+  quase preta no escuro. Precisou de tokens próprios pra cor de texto/
+  borda da lateral (`--cor-cabecalho-texto`, `--cor-cabecalho-borda`),
+  já que não dava mais pra assumir branco fixo.
+- **Raio de borda por tema**: `--raio-cartao`/`--raio-controle` — mais
+  fechado no claro (6px/4px, ecoando a Opção A) e um pouco mais aberto no
+  escuro (8px/6px, ecoando a Opção B), em vez de um valor fixo pros dois.
+- Badge "ADMIN" trocou de roxo pra rosa (`#c2478e`) — o roxo antigo
+  ficava perto demais do novo índigo de acento no tema escuro.
+- Processo: as duas opções foram prototipadas como mockup estático (mesma
+  tela "Simular") pra comparação e decisão antes de editar `base.html`
+  de novo, em vez de arriscar mais uma tentativa às cegas.
+- Testado nas telas principais (simular, empresas, cenários, cadastro de
+  empresa, resultado), nos dois temas, desktop e mobile — sem erros de
+  console, 47 testes automatizados continuam passando (mudança é só CSS).
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
