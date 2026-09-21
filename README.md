@@ -519,6 +519,39 @@ edita, ver seção anterior), então o mesmo tipo de bug não tem como
 acontecer ainda. Se um dia ganharem "excluir", revisitar esse parágrafo
 primeiro.
 
+**Varredura da mesma classe de bug nas operações de ADICIONAR
+(21/09/2026).** Achado real, não hipotético: nenhum campo de
+texto livre do app validava o tamanho contra o limite da coluna
+(`String(n)`) antes do insert/update — só o CNPJ tinha esse cuidado (fix
+de 04/09), e só porque um teste real bateu nele. Qualquer outro campo de
+texto (nome de empresa, de cenário, de usuário, município, descrição de
+item…) digitado além do limite passa liso no SQLite (sem VARCHAR real) e
+só estoura em produção — exatamente a mesma classe de bug do CNPJ, só que
+sistêmica, não isolada. Nova `app/formatacao.py::texto_validado(bruto,
+campo, maximo)` (mesmo padrão de `fracao_validada`/`email_valido`, já
+documentado ali), cortando espaço e recusando com mensagem clara em vez
+de deixar o banco rejeitar. Aplicada em todo campo de texto livre que
+tem limite de coluna:
+
+| Campo | Rota | Limite |
+|---|---|---|
+| Razão social | `/empresas/nova`, `/empresas/{id}/editar` | 255 |
+| Município | idem | 120 |
+| Ramo de atividade | idem | 120 |
+| Descrição do item | idem (linhas dinâmicas) | 255 |
+| UF | idem | validada contra a lista de 27 UFs, não só tamanho |
+| Nome do cenário | `/cenarios/novo` | 160 |
+| Fonte / Base legal | idem | 255 cada |
+| Nome do usuário | `/perfil`, `/usuarios/{id}/editar` | 200 |
+| E-mail | idem | 255 |
+| Nome da empresa/escritório | `/perfil` (`Tenant.nome`) | 200 |
+
+Testado ao vivo: nome de empresa com 300 caracteres → mensagem de erro
+clara, sem 500, formulário mantém o que foi digitado; nome de cenário com
+215 caracteres → mesmo comportamento; cadastro normal (nomes dentro do
+limite) continua funcionando sem nenhuma mudança visível. 47 testes
+automatizados continuam passando.
+
 **Ajuda da IA durante o cadastro** (`POST /empresas/ajuda`): chat ao lado
 do formulário para tirar dúvida sobre o que cada campo significa ("o que é
 RBT12?"). Instruída a nunca citar uma alíquota ou número específico — se

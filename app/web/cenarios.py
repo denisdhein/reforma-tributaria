@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencias import usuario_web
 from app.db import get_db
-from app.formatacao import fracao_validada
+from app.formatacao import fracao_validada, texto_validado
 from app.models import CenarioAliquota, TipoCenario, Usuario
 from app.web.rotas import _cenarios_visiveis, templates
 
@@ -68,6 +68,11 @@ def criar_cenario(
     try:
         ibs = fracao_validada(aliquota_ibs, "Alíquota do IBS")
         cbs = fracao_validada(aliquota_cbs, "Alíquota da CBS")
+        # Mesma classe do bug do CNPJ pontuado: texto além do limite da
+        # coluna passa liso no SQLite, só estoura contra Postgres.
+        nome = texto_validado(nome, "Nome do cenário", 160)
+        fonte_val = texto_validado(fonte, "Fonte", 255)
+        base_legal_val = texto_validado(base_legal, "Base legal", 255)
     except ValueError as exc:
         return templates.TemplateResponse("cenario_novo.html", {
             "request": request, "usuario": usuario, "pagina_ativa": "cenarios",
@@ -79,8 +84,8 @@ def criar_cenario(
         nome=nome,
         aliquota_ibs=ibs,
         aliquota_cbs=cbs,
-        fonte=(fonte.strip() or None),
-        base_legal=(base_legal.strip() or None),
+        fonte=(fonte_val or None),
+        base_legal=(base_legal_val or None),
         tipo=TipoCenario.USUARIO,
         ativo=True,
     )

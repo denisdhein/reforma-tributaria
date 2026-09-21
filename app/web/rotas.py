@@ -454,12 +454,18 @@ def atualizar_perfil(
     erro = None
     if not nome:
         erro = "Nome não pode ficar em branco."
+    elif len(nome) > 200:
+        erro = f"Nome tem {len(nome)} caracteres — o máximo é 200."
     elif not email or not email_valido(email):
         erro = f'E-mail inválido: "{email}".'
+    elif len(email) > 255:
+        erro = f"E-mail tem {len(email)} caracteres — o máximo é 255."
     elif db.scalar(select(Usuario).where(Usuario.email == email, Usuario.id != usuario.id)):
         erro = f'Já existe outro usuário com o e-mail "{email}".'
     elif pode_renomear_conta and not nome_tenant:
         erro = "Nome da empresa/escritório não pode ficar em branco."
+    elif pode_renomear_conta and len(nome_tenant) > 200:
+        erro = f"Nome da empresa/escritório tem {len(nome_tenant)} caracteres — o máximo é 200."
 
     if erro is None and foto is not None and foto.filename:
         try:

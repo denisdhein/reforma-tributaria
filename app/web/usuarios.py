@@ -40,8 +40,12 @@ def _validar_e_aplicar(
 
     if not nome:
         raise ErroValidacao("Nome não pode ficar em branco.")
+    if len(nome) > 200:
+        raise ErroValidacao(f"Nome tem {len(nome)} caracteres — o máximo é 200.")
     if not email or not email_valido(email):
         raise ErroValidacao(f'E-mail inválido: "{email}".')
+    if len(email) > 255:
+        raise ErroValidacao(f"E-mail tem {len(email)} caracteres — o máximo é 255.")
 
     outro_com_mesmo_email = db.scalar(
         select(Usuario).where(Usuario.email == email, Usuario.id != alvo.id)

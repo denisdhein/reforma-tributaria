@@ -18,6 +18,23 @@ def email_valido(email: str) -> bool:
     return bool(_EMAIL_RE.match(email))
 
 
+def texto_validado(bruto: str, campo: str, maximo: int) -> str:
+    """Corta espaço nas pontas e barra texto maior que a coluna do banco
+    aceita, ANTES do insert/update. Sem isso, um texto digitado além do
+    `String(n)` da coluna passa liso no SQLite (sem VARCHAR real) e só
+    estoura em produção (Postgres, que reforça o limite de verdade) —
+    mesma classe do bug do CNPJ pontuado, só que pra qualquer campo de
+    texto livre (nome de empresa, de cenário, de usuário...), não só um.
+    Levanta ValueError com mensagem pronta pra tela, igual fracao_validada."""
+    texto = (bruto or "").strip()
+    if len(texto) > maximo:
+        raise ValueError(
+            f'"{campo}" tem {len(texto)} caracteres — o máximo é {maximo}. '
+            f'Digitado: "{texto[:maximo]}…"'
+        )
+    return texto
+
+
 def fracao_validada(bruto: str, campo: str, minimo: str = "0", maximo: str = "100") -> Decimal:
     """Percentual digitado (17,5) vira fração (0.175), validado entre
     `minimo` e `maximo` (em %). Levanta ValueError com mensagem pronta

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencias import eh_admin, usuario_api, usuario_web
 from app.db import get_db
+from app.formatacao import texto_validado
 from app.ia.servico import responder_ajuda_cadastro
 from app.models import (
     CustoEmpresa, Empresa, ItemEmpresa, OpcaoSimplesIBSCBS, OrigemCusto,
@@ -146,13 +147,25 @@ def _validar_e_montar(
             f'CNPJ precisa ter 14 dígitos — "{cnpj.strip()}" tem {len(cnpj_digitos)}.'
         )
 
+    # Mesma classe do bug do CNPJ, generalizada: texto digitado além do
+    # limite da coluna (`String(n)`) passa liso no SQLite e só estoura em
+    # produção (Postgres reforça VARCHAR de verdade). Valida ANTES do
+    # insert, não depois.
+    razao_social_val = texto_validado(razao_social, "Razão social", 255)
+    municipio_val = texto_validado(municipio, "Município", 120)
+    ramo_val = texto_validado(ramo, "Ramo de atividade", 120)
+
+    uf_val = uf.strip().upper()
+    if uf_val not in UFS:
+        raise ErroValidacao(f'UF inválida: "{uf_val}".')
+
     campos = dict(
         tenant_id=usuario.tenant_id,
-        razao_social=razao_social.strip(),
+        razao_social=razao_social_val,
         cnpj=(cnpj_digitos or None),
-        uf=uf.strip().upper(),
-        municipio=municipio.strip(),
-        ramo=(ramo.strip() or None),
+        uf=uf_val,
+        municipio=municipio_val,
+        ramo=(ramo_val or None),
         regime=regime_enum,
         simples_anexo=int(simples_anexo) if simples_anexo else None,
         simples_opcao_ibs_cbs=(
@@ -198,12 +211,13 @@ def _validar_e_montar(
     for descricao, pct, regime_dif, seletivo in itens:
         if not descricao.strip():
             continue
+        descricao_val = texto_validado(descricao, "Descrição do item", 255)
         pct_dec = _fracao(pct, "% do faturamento do item")
         if pct_dec is None or pct_dec <= 0:
-            raise ErroValidacao(f'Item "{descricao}" precisa de um % de faturamento maior que zero.')
+            raise ErroValidacao(f'Item "{descricao_val}" precisa de um % de faturamento maior que zero.')
         soma_pct += pct_dec
         linhas_item.append(dict(
-            descricao=descricao.strip(),
+            descricao=descricao_val,
             pct_faturamento=pct_dec,
             regime_diferenciado=(regime_dif or "padrao"),
             sujeito_imposto_seletivo=(seletivo == "sim"),
@@ -234,9 +248,10 @@ def excluir_empresa(
 ) -> RedirectResponse:
     """
     Apaga a empresa e, em cascata (relationship com cascade="all,
-    delete-orphan" no modelo), seus custos e itens. Não existe Simulacao
-    persistida ainda, então não há histórico órfão a se preocupar por
-    enquanto — quando existir, isso vai precisar de mais cuidado.
+    delete-orphan" no modelo), seus custos, itens e — desde o fix de
+    21/09/2026 — as simulações e análises de IA salvas dela também
+    (Empresa.simulacoes). Sem isso, uma empresa já simulada não podia ser
+    excluída (violava a FK de Simulacao.empresa_id, 500 em produção).
     """
     empresa = db.get(Empresa, empresa_id)
     pode_excluir = (
