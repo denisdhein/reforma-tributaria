@@ -96,6 +96,13 @@ class Empresa(Base):
     itens: Mapped[list["ItemEmpresa"]] = relationship(
         back_populates="empresa", cascade="all, delete-orphan"
     )
+    # Sem isso, excluir uma empresa com simulação salva (RF08/RF11) viola a
+    # FK de Simulacao.empresa_id — SQLite deixa passar sem avisar (sem
+    # enforcement de FK por padrão), Postgres (produção) rejeita com 500.
+    # Mesma classe de bug do CNPJ pontuado: só aparece contra banco real.
+    simulacoes: Mapped[list["Simulacao"]] = relationship(  # noqa: F821
+        back_populates="empresa", cascade="all, delete-orphan"
+    )
 
 
 class CustoEmpresa(Base):

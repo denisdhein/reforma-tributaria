@@ -459,8 +459,21 @@ salvar, e simular em seguida sem erro.
 sobra órfão). Confirmação por `confirm()` do navegador antes de enviar.
 Bloqueado no servidor (não só escondido na tela) para empresa de outro
 tenant e para papel `operador` — mesma régua já usada em renomear a conta
-no perfil. Sem `Simulacao` persistida ainda, não existe histórico órfão a
-zelar; quando existir, precisa revisitar isso.
+no perfil.
+
+**Bug real corrigido (21/09/2026):** excluir uma empresa que já tinha
+simulação salva (comum — é o uso normal do sistema desde RF08/RF11) dava
+500 em produção. Causa: `Simulacao.empresa_id` é uma FK comum, sem cascade
+nenhum — o comentário antigo aqui mesmo já avisava "sem `Simulacao`
+persistida ainda... quando existir, precisa revisitar isso", só que
+ninguém revisitou quando RF08/RF11 chegou. SQLite não reforça FK por
+padrão, então o bug nunca apareceu em teste local — só contra o Postgres
+de produção, mesma classe do bug do CNPJ pontuado (04/09). Corrigido com
+`Empresa.simulacoes` (relationship com `cascade="all, delete-orphan"`,
+espelhando `custos`/`itens`) — excluir a empresa agora apaga também as
+simulações e análises de IA associadas, sem deixar órfão nem violar FK.
+Testado ao vivo: empresa com 9 simulações + 9 análises salvas, excluída
+sem erro, as 18 linhas confirmadas removidas via query direta no banco.
 
 **Ajuda da IA durante o cadastro** (`POST /empresas/ajuda`): chat ao lado
 do formulário para tirar dúvida sobre o que cada campo significa ("o que é
