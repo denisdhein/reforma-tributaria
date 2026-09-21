@@ -423,6 +423,41 @@ escolha (par de webfonts vistosas), não a fonte específica.
 - Testado nos dois temas (desktop, dark mode incluso) — sem erros de
   console, 47 testes automatizados continuam passando.
 
+**Oitava rodada — identidade única, azul, cantos arredondados (mesmo
+dia).** As posições da interface (barra lateral, cards, botões) ficaram
+como estavam; a mudança foi no tratamento visual dos componentes.
+Referência de estilo: paleta única entre claro/escuro (não mais duas
+identidades que trocam por tema), acento azul, cantos generosamente
+arredondados, sombra suave colorida — visual mais amigável que as
+rodadas anteriores, que tinham ido na direção oposta (raio de borda
+pequeno, sombra mínima). Tudo em `base.html`:
+
+- **Cor única**: paleta unificada entre claro e escuro (não mais duas
+  linguagens visuais por tema, como na sexta rodada) — acento azul
+  (`#2f6fee` claro / `#5b8def` escuro), evitando roxo (colidiria com a
+  identidade de marca de outros produtos financeiros) e evitando
+  verde/vermelho (já reservados ao significado semântico dos
+  indicadores — redução/aumento de carga).
+- **Barra lateral fixa numa cor de marca**: volta a ficar sempre escura
+  (azul-marinho `#0f1b3d`) nas duas paletas, independente do tema do
+  conteúdo — mesmo raciocínio de app com navegação "de marca". O item
+  ativo virou uma pílula preenchida (branco translúcido sobre o fundo
+  escuro) em vez do sublinhado/borda lateral fina de antes — precisou de
+  um tom fixo em vez de `--cor-primaria-fraca` (que troca de claro pra
+  escuro conforme o tema do conteúdo, o que deixava o destaque quase
+  invisível quando a lateral já é sempre escura).
+- **Cantos bem arredondados**: `--raio-cartao` (20px) e `--raio-controle`
+  (14px) — inversão direta da rodada anterior (4-5px). Botões primários
+  (`button`, `.botao-link`) e secundários (`.botao-secundario`) viram
+  pílula (`border-radius: 999px`).
+- **Sombra suave colorida**: cards ganham `box-shadow` tingido na cor do
+  acento (não cinza neutro); botões primários ganham uma sombra colorida
+  discreta com leve elevação no hover — mais contida que a rodada 2
+  (blur e opacidade menores), pra não repetir o efeito "neon" já
+  rejeitado antes.
+- Testado nos dois temas (desktop e mobile 375px) — sem erros de
+  console, 47 testes automatizados continuam passando.
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
