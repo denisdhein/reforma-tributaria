@@ -632,8 +632,50 @@ fictícias, não guardam nada a proteger, e a senha previsível ajuda a testar
 isolamento de tenant sem caçar log.
 
 **Pendências conscientes:** sem "esqueci minha senha", sem expiração de
-sessão configurável além do fixo em `app/auth/seguranca.py` (12h), sem tela
-de admin para gerenciar contas pela web (fica no CLI por enquanto).
+sessão configurável além do fixo em `app/auth/seguranca.py` (12h).
+
+### Autoatendimento e administração de usuários (21/09/2026)
+
+Usuário comum precisa poder editar o próprio nome, e-mail e senha; um
+admin precisa ver todos os usuários cadastrados e também poder
+alterá-los.
+
+- **`/perfil`** ganhou dois campos que faltavam: e-mail (antes só
+  aparecia, `disabled`, sem jeito de trocar) e uma seção separada "Alterar
+  senha" (`POST /perfil/senha`) que exige a senha atual antes de aceitar a
+  nova — trocar senha sem confirmar a atual deixaria uma sessão roubada
+  (cookie vazado) virar posse permanente da conta. Validações: e-mail
+  único no sistema inteiro (`Usuario.email` é `UNIQUE` global, não por
+  tenant) e formato básico; senha nova com no mínimo 8 caracteres e igual
+  nos dois campos.
+- **`/usuarios`** (novo módulo, `app/web/usuarios.py`) — só admin, redireciona
+  pra `/` silenciosamente pra qualquer outro papel (mesmo padrão de
+  "trata como se não existisse" já usado pra empresa/simulação de outro
+  tenant). Lista todos os usuários do sistema — atravessa tenants, mesma
+  regra que já existia pra empresas/histórico — com nome, e-mail,
+  escritório/empresa, papel e status. `/usuarios/{id}/editar` deixa o
+  admin mudar nome, e-mail, papel (admin/gestor/operador), ativar/
+  desativar e **redefinir a senha sem precisar da senha atual** (é
+  redefinição de administrador, não autoatendimento).
+- **Trava contra autobloqueio:** antes de aplicar qualquer mudança que
+  tiraria um usuário de "admin ativo", o sistema conta quantos outros
+  admins ativos sobram — se for zero, recusa com uma mensagem explicando
+  por quê. Sem isso, desativar ou rebaixar por engano o único admin
+  trancaria todo mundo fora da administração, sem CLI de emergência fácil
+  pra reverter (o `criar_usuario.py` cria conta nova, não promove uma
+  existente). Testado ao vivo: tentei desativar o único admin (eu mesmo)
+  e a tela recusou com a mensagem certa, sem alterar nada no banco.
+- Validação de e-mail compartilhada entre as duas telas
+  (`app/formatacao.py::email_valido`) — mesmo raciocínio de
+  `fracao_validada` já documentado ali: uma checagem, usada nos dois
+  lugares, sem duplicar regra nem criar import circular entre
+  `rotas.py` e `usuarios.py`.
+- Testado nos dois papéis: como admin (listar, editar outro usuário,
+  tentar autobloqueio, redefinir senha de outro usuário), como gestor
+  (link "Usuários" não aparece na lateral, `/usuarios` direto na URL
+  redireciona pra `/`), e autoatendimento (trocar e-mail, trocar senha,
+  logout, login de novo com a senha nova — confirma que o hash gravado
+  bate).
 
 ## IA generativa
 

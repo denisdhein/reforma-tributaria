@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Usuários · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">Administração</span>
+    <h1>Usuários</h1>
+    <p>Todas as contas cadastradas no sistema, em qualquer escritório ou empresa.</p>
+  </div>
+</div>
+
+{% if request.query_params.get('atualizado') %}
+  <div class="sucesso">Usuário atualizado.</div>
+{% endif %}
+
+<section class="cartao">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th><th>E-mail</th><th>Escritório/empresa</th><th>Papel</th><th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+        <tr>
+          <td>{{ u.nome }}{% if u.id == usuario.id %} <span class="rodape-meta">(você)</span>{% endif %}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.tenant.nome }}</td>
+          <td>
+            {% if u.papel.value == 'admin' %}
+              <span class="selo">admin</span>
+            {% elif u.papel.value == 'gestor' %}
+              <span class="selo selo-neutro">gestor</span>
+            {% else %}
+              <span class="selo selo-neutro">operador</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.ativo %}
+              <span class="selo selo-sucesso">ativo</span>
+            {% else %}
+              <span class="selo selo-aviso">inativo</span>
+            {% endif %}
+          </td>
+          <td><a href="/usuarios/{{ u.id }}/editar" class="botao-secundario botao-tabela">Editar</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

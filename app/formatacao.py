@@ -6,7 +6,16 @@ formata um valor na tela formata o mesmo valor quando a IA o referencia.
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal, InvalidOperation
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def email_valido(email: str) -> bool:
+    """Checagem propositalmente simples (formato, não existência) —
+    compartilhada entre /perfil (autoatendimento) e /usuarios (admin)."""
+    return bool(_EMAIL_RE.match(email))
 
 
 def fracao_validada(bruto: str, campo: str, minimo: str = "0", maximo: str = "100") -> Decimal:

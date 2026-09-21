@@ -26,10 +26,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencias import eh_admin, usuario_api, usuario_web
-from app.auth.seguranca import EXPIRA_HORAS, NOME_COOKIE, criar_token, verificar_senha
+from app.auth.seguranca import EXPIRA_HORAS, NOME_COOKIE, criar_token, hash_senha, verificar_senha
 from app.config import settings
 from app.db import get_db
-from app.formatacao import fracao_validada, moeda, numero, pctfmt
+from app.formatacao import email_valido, fracao_validada, moeda, numero, pctfmt
 from app.ia.prompt import montar_contexto
 from app.ia.servico import analisar, responder_pergunta
 from app.models import (
@@ -436,6 +436,7 @@ def perfil(request: Request, usuario: Usuario = Depends(usuario_web)) -> HTMLRes
 def atualizar_perfil(
     request: Request,
     nome: str = Form(...),
+    email: str = Form(...),
     nome_tenant: str = Form(...),
     foto: UploadFile | None = File(None),
     remover_foto_atual: str = Form(""),
@@ -443,6 +444,7 @@ def atualizar_perfil(
     usuario: Usuario = Depends(usuario_web),
 ) -> HTMLResponse:
     nome = nome.strip()
+    email = email.strip().lower()
     nome_tenant = nome_tenant.strip()
     # Operador administra o que é dele (simulações); renomear a conta toda
     # fica para gestor/admin — a mesma distinção de papel que já existe no
@@ -452,6 +454,10 @@ def atualizar_perfil(
     erro = None
     if not nome:
         erro = "Nome não pode ficar em branco."
+    elif not email or not email_valido(email):
+        erro = f'E-mail inválido: "{email}".'
+    elif db.scalar(select(Usuario).where(Usuario.email == email, Usuario.id != usuario.id)):
+        erro = f'Já existe outro usuário com o e-mail "{email}".'
     elif pode_renomear_conta and not nome_tenant:
         erro = "Nome da empresa/escritório não pode ficar em branco."
 
@@ -475,6 +481,7 @@ def atualizar_perfil(
         })
 
     usuario.nome = nome
+    usuario.email = email
     if pode_renomear_conta:
         usuario.tenant.nome = nome_tenant
     db.commit()
@@ -482,4 +489,36 @@ def atualizar_perfil(
     return templates.TemplateResponse("perfil.html", {
         "request": request, "usuario": usuario, "pagina_ativa": "perfil",
         "erro": None, "sucesso": "Perfil atualizado.",
+    })
+
+
+@router.post("/perfil/senha", response_class=HTMLResponse)
+def trocar_senha(
+    request: Request,
+    senha_atual: str = Form(...),
+    nova_senha: str = Form(...),
+    confirmar_senha: str = Form(...),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(usuario_web),
+) -> HTMLResponse:
+    erro = None
+    if not verificar_senha(senha_atual, usuario.senha_hash):
+        erro = "Senha atual incorreta."
+    elif len(nova_senha) < 8:
+        erro = "A nova senha precisa ter pelo menos 8 caracteres."
+    elif nova_senha != confirmar_senha:
+        erro = "A confirmação não bate com a nova senha."
+
+    if erro:
+        return templates.TemplateResponse("perfil.html", {
+            "request": request, "usuario": usuario, "pagina_ativa": "perfil",
+            "erro": erro, "sucesso": None,
+        })
+
+    usuario.senha_hash = hash_senha(nova_senha)
+    db.commit()
+
+    return templates.TemplateResponse("perfil.html", {
+        "request": request, "usuario": usuario, "pagina_ativa": "perfil",
+        "erro": None, "sucesso": "Senha alterada.",
     })

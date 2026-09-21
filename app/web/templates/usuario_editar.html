@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Editar {{ alvo.nome }} · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">Administração</span>
+    <h1>Editar usuário</h1>
+    <p>{{ alvo.nome }} · {{ alvo.tenant.nome }}</p>
+  </div>
+  <div class="acoes">
+    <a href="/usuarios" class="botao-secundario">← Voltar</a>
+  </div>
+</div>
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+<section class="cartao" style="max-width: 520px;">
+  <form method="post" action="/usuarios/{{ alvo.id }}/editar">
+    <div class="grade-2">
+      <div class="campo">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" value="{{ alvo.nome }}" required>
+      </div>
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="text" id="email" name="email" value="{{ alvo.email }}" required>
+      </div>
+    </div>
+
+    <div class="grade-2">
+      <div class="campo">
+        <label for="papel">Papel de acesso</label>
+        <select id="papel" name="papel">
+          {% for p in papeis %}
+            <option value="{{ p.value }}" {% if alvo.papel == p %}selected{% endif %}>{{ p.value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label>Status</label>
+        <div class="radios">
+          <label><input type="radio" name="ativo" value="1" {% if alvo.ativo %}checked{% endif %}> Ativo</label>
+          <label><input type="radio" name="ativo" value="0" {% if not alvo.ativo %}checked{% endif %}> Inativo</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="grade-2">
+      <div class="campo">
+        <label for="nova_senha">Nova senha</label>
+        <input type="password" id="nova_senha" name="nova_senha" placeholder="Deixe em branco pra manter a atual">
+      </div>
+      <div class="campo">
+        <label for="confirmar_senha">Confirmar nova senha</label>
+        <input type="password" id="confirmar_senha" name="confirmar_senha">
+      </div>
+    </div>
+    <p class="rodape-meta" style="margin-top: -0.5rem; margin-bottom: 1.25rem;">
+      Preencher os dois campos acima troca a senha do usuário imediatamente, sem precisar da senha
+      atual dele (redefinição de administrador). Mínimo de 8 caracteres.
+    </p>
+
+    <button type="submit">Salvar</button>
+  </form>
+</section>
+
+{% endblock %}
