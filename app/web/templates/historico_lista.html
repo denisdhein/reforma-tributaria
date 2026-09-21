@@ -17,6 +17,11 @@
 {% if erro %}
   <div class="erro">{{ erro }}</div>
 {% endif %}
+{% if request.query_params.get('excluidas') %}
+  <div class="sucesso">
+    {{ request.query_params.get('excluidas') }} simulação(ões) excluída(s) do histórico.
+  </div>
+{% endif %}
 
 <section class="cartao">
   {% if not simulacoes %}
@@ -27,40 +32,77 @@
       <a href="/" class="botao-link">Ir para Simular</a>
     </div>
   {% else %}
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Empresa</th>
-            <th>Ano</th>
-            <th>Cenário</th>
-            <th class="num">Carga atual</th>
-            <th class="num">Carga simulada</th>
-            <th class="num">Variação</th>
-            <th>Quando</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in simulacoes %}
+    {% set pode_excluir = usuario.papel.value != 'operador' %}
+    <form method="post" action="/historico/excluir" id="form-historico"
+          onsubmit="return confirm('Excluir as simulações selecionadas? Isso apaga também a análise de IA de cada uma. Não tem como desfazer.');">
+      {% if pode_excluir %}
+        <div style="display:flex; justify-content: flex-end; margin-bottom: 0.75rem;">
+          <button type="submit" class="botao-secundario botao-perigo" id="botao-excluir-selecionadas" disabled>
+            Excluir selecionadas
+          </button>
+        </div>
+      {% endif %}
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
             <tr>
-              <td>{{ s.empresa.razao_social }}</td>
-              <td>{{ s.ano_base }}</td>
-              <td>
-                {{ s.cenario_aliquota_snapshot.nome }}
-                {% if s.opcao_simples %}<span class="rodape-meta">({{ s.opcao_simples.value }})</span>{% endif %}
-              </td>
-              <td class="num">{{ s.carga_atual_rs|moeda }}</td>
-              <td class="num">{{ s.carga_futura_rs|moeda }}</td>
-              <td class="num">{{ s.diferenca_rs|moeda }} ({{ s.diferenca_pct|pctfmt(2) }})</td>
-              <td class="rodape-meta">{{ s.criada_em.strftime('%d/%m/%Y %H:%M') }}</td>
-              <td><a class="botao-secundario botao-tabela" href="/historico/{{ s.id }}">Ver</a></td>
+              {% if pode_excluir %}
+                <th style="width: 2rem;"><input type="checkbox" id="selecionar-todas" aria-label="Selecionar todas"></th>
+              {% endif %}
+              <th>Empresa</th>
+              <th>Ano</th>
+              <th>Cenário</th>
+              <th class="num">Carga atual</th>
+              <th class="num">Carga simulada</th>
+              <th class="num">Variação</th>
+              <th>Quando</th>
+              <th></th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {% for s in simulacoes %}
+              <tr>
+                {% if pode_excluir %}
+                  <td><input type="checkbox" name="ids" value="{{ s.id }}" class="chk-linha-historico"></td>
+                {% endif %}
+                <td>{{ s.empresa.razao_social }}</td>
+                <td>{{ s.ano_base }}</td>
+                <td>
+                  {{ s.cenario_aliquota_snapshot.nome }}
+                  {% if s.opcao_simples %}<span class="rodape-meta">({{ s.opcao_simples.value }})</span>{% endif %}
+                </td>
+                <td class="num">{{ s.carga_atual_rs|moeda }}</td>
+                <td class="num">{{ s.carga_futura_rs|moeda }}</td>
+                <td class="num">{{ s.diferenca_rs|moeda }} ({{ s.diferenca_pct|pctfmt(2) }})</td>
+                <td class="rodape-meta">{{ s.criada_em.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td><a class="botao-secundario botao-tabela" href="/historico/{{ s.id }}">Ver</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
   {% endif %}
 </section>
+
+{% if simulacoes and usuario.papel.value != 'operador' %}
+<script>
+  (function () {
+    var todas = document.getElementById('selecionar-todas');
+    var linhas = document.querySelectorAll('.chk-linha-historico');
+    var botao = document.getElementById('botao-excluir-selecionadas');
+
+    function atualizarBotao() {
+      var algumaMarcada = Array.prototype.some.call(linhas, function (c) { return c.checked; });
+      botao.disabled = !algumaMarcada;
+    }
+    todas.addEventListener('change', function () {
+      linhas.forEach(function (c) { c.checked = todas.checked; });
+      atualizarBotao();
+    });
+    linhas.forEach(function (c) { c.addEventListener('change', atualizarBotao); });
+  })();
+</script>
+{% endif %}
 
 {% endblock %}

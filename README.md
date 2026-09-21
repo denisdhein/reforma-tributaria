@@ -475,6 +475,50 @@ simulações e análises de IA associadas, sem deixar órfão nem violar FK.
 Testado ao vivo: empresa com 9 simulações + 9 análises salvas, excluída
 sem erro, as 18 linhas confirmadas removidas via query direta no banco.
 
+**Excluir histórico** (`POST /historico/excluir`, 21/09/2026), pra apagar
+o histórico inteiro ou só uma parte das simulações. Uma tela só serve os
+dois casos:
+checkbox por linha + "selecionar todas" no cabeçalho (JS puro, sem
+framework) alimentam o mesmo `POST /historico/excluir` com a lista de
+ids marcados — marcar tudo e enviar apaga o histórico inteiro, marcar só
+algumas apaga só essas. Bloqueado no servidor pro papel `operador` (não
+só escondido — nem o checkbox nem o botão aparecem na tela, e a rota
+recusa mesmo se o POST for forjado direto). Cross-tenant tratado igual
+ao resto: `admin` atravessa, os demais só apagam do próprio tenant (um
+id de outro tenant na lista é simplesmente ignorado pela query, não dá
+erro nem exclui por engano).
+
+**Cuidado que virou obrigatório depois do bug do parágrafo anterior**: a
+exclusão apaga cada `Simulacao` objeto por objeto (`db.delete()` num
+loop), nunca um `DELETE` em massa (`Query.delete()`). Um `DELETE` em
+massa contorna o cascade do ORM — a `AnaliseIA` de cada simulação
+(`Simulacao.analise`, `cascade="all, delete-orphan"`) não seria apagada
+junto, e a constraint de FK dela reproduziria exatamente o mesmo 500 que
+excluir empresa dava antes do fix. Testado ao vivo confirmando os dois
+caminhos: marcar uma linha e enviar (só ela some, resto intacto — 
+conferido via query direta no banco) e "selecionar todas" (histórico
+inteiro esvaziado, estado vazio aparece); testado também que o papel
+`operador` nem vê a coluna de checkbox/botão, e que um POST direto dele
+pra rota é recusado sem apagar nada.
+
+**Varredura completa contra a mesma classe de bug (mesmo pedido, "faz
+uma varredura pra não ter mais erro desse tipo")**: listei toda
+`ForeignKey` do schema (`app/models/*.py`) e todo `db.delete(...)`/
+`Query.delete()` existente no app. Resultado — só duas rotas apagam
+dado de verdade hoje: excluir empresa (corrigida acima) e excluir
+histórico (implementada já correta). Os dois `db.delete()` dentro de
+editar empresa (limpar custos/itens antigos antes de reinserir) são
+seguros — nada no schema referencia `CustoEmpresa.id`/`ItemEmpresa.id`.
+**Riscos latentes, não corrigidos por não serem alcançáveis ainda** (sem
+migration nem `ondelete` novo — pendência consciente, não descoberta
+escondida): `Simulacao.cenario_aliquota_id`/`.regras_versao_id`/
+`.criada_por_id` e `CenarioAliquota.criada_por_id` são FKs simples pra
+`CenarioAliquota`/`RegrasVersao`/`Usuario` — nenhuma dessas três
+entidades tem rota de exclusão hoje (cenário só cria e lista; usuário só
+edita, ver seção anterior), então o mesmo tipo de bug não tem como
+acontecer ainda. Se um dia ganharem "excluir", revisitar esse parágrafo
+primeiro.
+
 **Ajuda da IA durante o cadastro** (`POST /empresas/ajuda`): chat ao lado
 do formulário para tirar dúvida sobre o que cada campo significa ("o que é
 RBT12?"). Instruída a nunca citar uma alíquota ou número específico — se

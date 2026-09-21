@@ -9,14 +9,14 @@ sucedida vira uma linha aqui, sem passo extra de "salvar". Reusa
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencias import eh_admin, usuario_web
 from app.db import get_db
-from app.models import Simulacao, StatusVerificacao, Usuario
+from app.models import PapelUsuario, Simulacao, StatusVerificacao, Usuario
 from app.web.graficos import montar_grafico_atual_futuro, montar_grafico_simples
 from app.web.rotas import templates
 
@@ -65,6 +65,38 @@ def listar_historico(
         "request": request, "usuario": usuario, "pagina_ativa": "historico",
         "simulacoes": simulacoes, "erro": None,
     })
+
+
+@router.post("/historico/excluir")
+def excluir_simulacoes(
+    ids: list[int] = Form([]),
+    db: Session = Depends(get_db), usuario: Usuario = Depends(usuario_web),
+) -> RedirectResponse:
+    """
+    Exclui uma ou mais simulações do histórico — mesma tela serve pra
+    "excluir tudo" (marcar "selecionar todas" antes de enviar) e pra
+    "excluir só estas" (marcar só algumas). Bloqueado pro papel operador,
+    mesma régua já usada em excluir empresa/renomear conta.
+
+    Apaga objeto por objeto (`db.delete`), não um DELETE em massa — só
+    assim o cascade do ORM (`Simulacao.analise`, delete-orphan) roda pra
+    cada uma e leva a AnaliseIA junto. Um DELETE em massa (`Query.delete()`)
+    ignora esse cascade e reproduziria a mesma classe de 500 que excluir
+    empresa dava antes de ganhar `Empresa.simulacoes` com delete-orphan.
+    """
+    if usuario.papel == PapelUsuario.OPERADOR or not ids:
+        return RedirectResponse("/historico", status_code=303)
+
+    q = select(Simulacao).where(Simulacao.id.in_(ids))
+    if not eh_admin(usuario):
+        q = q.where(Simulacao.tenant_id == usuario.tenant_id)
+    simulacoes = db.scalars(q).all()
+
+    for simulacao in simulacoes:
+        db.delete(simulacao)
+    db.commit()
+
+    return RedirectResponse(f"/historico?excluidas={len(simulacoes)}", status_code=303)
 
 
 @router.get("/historico/{simulacao_id}", response_class=HTMLResponse)
