@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}Reforma Tributária · Simulador{% endblock %}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
 <script>
   // Aplica o tema salvo antes do primeiro paint — sem isso a página pisca
   // clara e só depois escurece.
@@ -43,10 +43,15 @@
     --cor-cabecalho-texto: #1c1a16;
     --cor-cabecalho-texto-suave: #8a8375;
     --cor-cabecalho-borda: #e4ded0;
-    --font-titulo: "Fraunces", Georgia, serif;
-    --font-corpo: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --raio-cartao: 6px;
-    --raio-controle: 4px;
+    /* Fonte nativa do sistema, de propósito — nada de webfont "de
+       exibição" (serifa editorial, geométrica etc.): esse tipo de par
+       serifa+grotesk é hoje a cara reconhecível de site gerado por IA.
+       -apple-system/Segoe UI/Roboto é o que o próprio SO já renderiza —
+       ninguém associa a nenhuma ferramenta específica. */
+    --font-titulo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-corpo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --raio-cartao: 4px;
+    --raio-controle: 3px;
     --sombra: 0 1px 2px rgba(28, 26, 22, 0.05), 0 2px 12px rgba(28, 26, 22, 0.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -61,10 +66,10 @@
       --cor-cabecalho-texto: #e4e4e7;
       --cor-cabecalho-texto-suave: #78787f;
       --cor-cabecalho-borda: #232326;
-      --font-titulo: "Space Grotesk", "IBM Plex Sans", sans-serif;
-      --font-corpo: "Space Grotesk", "IBM Plex Sans", -apple-system, sans-serif;
-      --raio-cartao: 8px;
-      --raio-controle: 6px;
+      --font-titulo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-corpo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --raio-cartao: 5px;
+      --raio-controle: 4px;
       --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
   }
@@ -79,10 +84,10 @@
     --cor-cabecalho-texto: #e4e4e7;
     --cor-cabecalho-texto-suave: #78787f;
     --cor-cabecalho-borda: #232326;
-    --font-titulo: "Space Grotesk", "IBM Plex Sans", sans-serif;
-    --font-corpo: "Space Grotesk", "IBM Plex Sans", -apple-system, sans-serif;
-    --raio-cartao: 8px;
-    --raio-controle: 6px;
+    --font-titulo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-corpo: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --raio-cartao: 5px;
+    --raio-controle: 4px;
     --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 

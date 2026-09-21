@@ -178,11 +178,11 @@ Avatar sem foto usa a inicial do nome sobre uma cor tirada de uma paleta
 fixa por `usuario.id % 6` — só para não repetir a mesma cor pra todo
 mundo, não é identidade visual pensada.
 
-**Correção: link "Simular" saindo roxo, camuflado no
-fundo escuro.** O link na listagem de empresas era um `<a>` sem `class` —
-sem cor própria, herdava o roxo padrão do navegador pra link já visitado
-(`:visited`), que não combina com o resto da paleta. `.botao-secundario`
-(usada em "Simular"/"Editar"/"Cancelar") ganhou `display`, `padding` e
+**Correção: link "Simular" saindo roxo, camuflado no fundo escuro.** O
+link na listagem de empresas era um `<a>` sem `class` — sem cor própria,
+herdava o roxo padrão do navegador pra link já visitado (`:visited`),
+que não combina com o resto da paleta. `.botao-secundario` (usada em
+"Simular"/"Editar"/"Cancelar") ganhou `display`, `padding` e
 `border-radius` próprios — antes só funcionava direito em `<button>`,
 porque pegava essas propriedades da regra base de `button`, que um `<a>`
 não tem. Cor explícita em qualquer link estilizado como botão sempre
@@ -191,11 +191,11 @@ nenhum outro link da tela.
 
 ### Identidade visual (18/09/2026)
 
-A tela estava
-funcional mas genérica — fonte padrão do sistema, azul comum de
-dashboard, cards planos. Refeito só em `app/web/templates/base.html`
-(tokens de cor + tipografia são compartilhados por toda a aplicação via
-CSS custom properties, então um único arquivo alcança todas as telas):
+A tela estava funcional mas genérica — fonte padrão do sistema, azul
+comum de dashboard, cards planos. Refeito só em
+`app/web/templates/base.html` (tokens de cor + tipografia são
+compartilhados por toda a aplicação via CSS custom properties, então um
+único arquivo alcança todas as telas):
 
 - **Tipografia**: IBM Plex Serif (títulos), IBM Plex Sans (corpo) e IBM
   Plex Mono (valores monetários, percentuais, tabelas — com
@@ -395,6 +395,34 @@ identidade, não só luz/escuridão do mesmo design. Tudo em `base.html`:
   empresa, resultado), nos dois temas, desktop e mobile — sem erros de
   console, 47 testes automatizados continuam passando (mudança é só CSS).
 
+**Sétima rodada — tipografia neutra, layout intocado (21/09/2026).**
+Mais duas direções foram prototipadas (masthead de documento oficial sem
+sidebar; terminal financeiro denso), mas o problema identificado não era
+o layout (sidebar, cards) — era o design dos componentes/tipografia
+lendo como genérico. O par serifa-editorial + grotesk-geométrico
+(Fraunces + Space Grotesk, da rodada 6) é um padrão tipográfico bastante
+comum em sites gerados por ferramentas automáticas — trocar uma fonte de
+destaque por outra não resolveria, porque o problema era esse tipo de
+escolha (par de webfonts vistosas), não a fonte específica.
+
+- **Tipografia**: `--font-titulo` e `--font-corpo` viraram a mesma pilha
+  de fonte nativa do sistema (`-apple-system, "Segoe UI", Roboto,
+  Helvetica, Arial, sans-serif`) — nenhuma webfont de exibição chamativa
+  pro texto. É deliberadamente a fonte "de ninguém": o próprio SO já
+  renderiza, não é a cara reconhecível de nenhuma ferramenta. Título e
+  corpo não têm mais fontes diferentes entre si nem entre os dois temas
+  — só peso/tamanho fazem a hierarquia agora. `IBM Plex Mono` continua
+  só pros números (tabular, funcional — nunca foi o alvo da crítica).
+  Import do Google Fonts reduzido a só essa família mono.
+- **Raio de borda mais fechado**: `--raio-cartao`/`--raio-controle`
+  caíram de 6px/4px (claro) e 8px/6px (escuro) pra 4px/3px e 5px/4px —
+  cantos mais retos, menos "SaaS amigável", mais "ferramenta séria".
+- **Layout, cor e estrutura mantidos exatamente como estavam** — única
+  rodada até agora que reduziu escopo em vez de propor mudança ampla de
+  novo.
+- Testado nos dois temas (desktop, dark mode incluso) — sem erros de
+  console, 47 testes automatizados continuam passando.
+
 ## Gráfico de comparação (RF06)
 
 `app/web/graficos.py`. O RF06 do TCC I pedia "tabelas, cartões **e
@@ -477,8 +505,7 @@ sem erro, as 18 linhas confirmadas removidas via query direta no banco.
 
 **Excluir histórico** (`POST /historico/excluir`, 21/09/2026), pra apagar
 o histórico inteiro ou só uma parte das simulações. Uma tela só serve os
-dois casos:
-checkbox por linha + "selecionar todas" no cabeçalho (JS puro, sem
+dois casos: checkbox por linha + "selecionar todas" no cabeçalho (JS puro, sem
 framework) alimentam o mesmo `POST /historico/excluir` com a lista de
 ids marcados — marcar tudo e enviar apaga o histórico inteiro, marcar só
 algumas apaga só essas. Bloqueado no servidor pro papel `operador` (não
