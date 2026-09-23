@@ -571,15 +571,15 @@ dado de verdade hoje: excluir empresa (corrigida acima) e excluir
 histórico (implementada já correta). Os dois `db.delete()` dentro de
 editar empresa (limpar custos/itens antigos antes de reinserir) são
 seguros — nada no schema referencia `CustoEmpresa.id`/`ItemEmpresa.id`.
-**Riscos latentes, não corrigidos por não serem alcançáveis ainda** (sem
-migration nem `ondelete` novo — pendência consciente, não descoberta
-escondida): `Simulacao.cenario_aliquota_id`/`.regras_versao_id`/
-`.criada_por_id` e `CenarioAliquota.criada_por_id` são FKs simples pra
-`CenarioAliquota`/`RegrasVersao`/`Usuario` — nenhuma dessas três
-entidades tem rota de exclusão hoje (cenário só cria e lista; usuário só
-edita, ver seção anterior), então o mesmo tipo de bug não tem como
-acontecer ainda. Se um dia ganharem "excluir", revisitar esse parágrafo
-primeiro.
+**Correção de um erro deste próprio parágrafo (23/09/2026):** a varredura
+original citava `CenarioAliquota.criada_por_id` — esse campo não existe;
+quem tem `criada_por_id` é `RegrasVersao` (confirmado o jeito difícil,
+com um 500 ao vivo testando a exclusão de usuário — ver "Gestão de
+usuários" abaixo). `Simulacao.cenario_aliquota_id`/`.regras_versao_id`
+continuam FKs simples pra `CenarioAliquota`/`RegrasVersao`, sem cascade
+— mas nenhuma das duas tem rota de exclusão hoje (cenário só cria e
+lista), então esse ponto específico ainda não é alcançável. Se um dia
+ganharem "excluir", revisitar esse parágrafo primeiro.
 
 **Varredura da mesma classe de bug nas operações de ADICIONAR
 (21/09/2026).** Achado real, não hipotético: nenhum campo de
@@ -828,6 +828,40 @@ alterá-los.
   redireciona pra `/`), e autoatendimento (trocar e-mail, trocar senha,
   logout, login de novo com a senha nova — confirma que o hash gravado
   bate).
+
+### Cadastro e exclusão de usuário (23/09/2026)
+
+A tela de usuários tinha edição desde a rodada anterior; faltava criar
+conta nova e excluir uma existente sem passar pelo script de linha de
+comando.
+
+- **`GET/POST /usuarios/novo`** — formulário com nome, e-mail, senha,
+  papel e escolha de tenant: associar a um escritório/empresa já
+  existente (`<select>`) ou criar um novo ali mesmo (nome + tipo), com
+  alternância via rádio e JavaScript puro — mesmo padrão de campo
+  condicional já usado no cadastro de empresa. Reaproveita
+  `texto_validado`/`email_valido` e a checagem de e-mail único global.
+- **`POST /usuarios/{id}/excluir`** — só admin, e bloqueado para o
+  próprio usuário (não tem como se autoexcluir, mesmo trocando o id na
+  URL — o servidor recusa, não é só o botão escondido na tela). Antes de
+  excluir, passa pela mesma trava de "precisa sobrar admin ativo" já
+  usada na edição (`_garante_admin_sobrando`, agora compartilhada pelas
+  duas rotas).
+- **FKs que apontam para `usuario.id`:** `Simulacao.criada_por_id`,
+  `RegrasVersao.criada_por_id` e `LogAuditoria.usuario_id` são todas
+  opcionais (`nullable`) e existem só para rastreabilidade — quem criou
+  o quê. Excluir o usuário zera essas três colunas nas linhas dele antes
+  do `DELETE`, preservando simulação/versão de regra/log de auditoria em
+  vez de arrastar tudo junto (diferente do padrão usado em
+  Empresa→Simulacao, que é cascade de verdade porque lá a linha filha
+  não faz sentido sem o pai). Foto de perfil (`foto_nome`), se houver, é
+  removida do disco também.
+- Testado ao vivo: criar conta associando a tenant existente e criando
+  tenant novo; excluir um usuário comum e confirmar que a linha some da
+  lista; tentar excluir a própria conta pelo botão (ausente na tela) e
+  direto pela rota (recusada pelo servidor); tentar rebaixar o único
+  admin ativo do sistema pela tela de edição (recusada com a mesma
+  mensagem da trava de autobloqueio).
 
 ## IA generativa
 

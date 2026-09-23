@@ -8,17 +8,29 @@
     <h1>Usuários</h1>
     <p>Todas as contas cadastradas no sistema, em qualquer escritório ou empresa.</p>
   </div>
+  <div class="acoes">
+    <a href="/usuarios/novo" class="botao-link">+ Novo usuário</a>
+  </div>
 </div>
 
+{% if request.query_params.get('criado') %}
+  <div class="sucesso">Usuário criado.</div>
+{% endif %}
 {% if request.query_params.get('atualizado') %}
   <div class="sucesso">Usuário atualizado.</div>
+{% endif %}
+{% if request.query_params.get('excluido') %}
+  <div class="sucesso">Usuário excluído.</div>
+{% endif %}
+{% if request.query_params.get('erro') == 'admin' %}
+  <div class="erro">Não é possível excluir — precisa sobrar pelo menos um administrador ativo no sistema.</div>
 {% endif %}
 
 <section class="cartao">
   <table>
     <thead>
       <tr>
-        <th>Nome</th><th>E-mail</th><th>Escritório/empresa</th><th>Papel</th><th>Status</th><th></th>
+        <th>Nome</th><th>E-mail</th><th>Escritório/empresa</th><th>Papel</th><th>Status</th><th colspan="2"></th>
       </tr>
     </thead>
     <tbody>
@@ -44,6 +56,14 @@
             {% endif %}
           </td>
           <td><a href="/usuarios/{{ u.id }}/editar" class="botao-secundario botao-tabela">Editar</a></td>
+          <td>
+            {% if u.id != usuario.id %}
+              <form method="post" action="/usuarios/{{ u.id }}/excluir" class="form-excluir"
+                    onsubmit="return confirm('Excluir {{ u.nome }}? Não tem como desfazer.');">
+                <button type="submit" class="botao-secundario botao-perigo botao-tabela">Excluir</button>
+              </form>
+            {% endif %}
+          </td>
         </tr>
       {% endfor %}
     </tbody>

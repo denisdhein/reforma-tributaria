@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block titulo %}Novo usuário · Reforma Tributária{% endblock %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div class="titulo-bloco">
+    <span class="eyebrow">Administração</span>
+    <h1>Novo usuário</h1>
+    <p>Cria uma conta e o escritório/empresa dela, ou associa a um já existente.</p>
+  </div>
+  <div class="acoes">
+    <a href="/usuarios" class="botao-secundario">← Voltar</a>
+  </div>
+</div>
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+<section class="cartao" style="max-width: 560px;">
+  <form method="post" action="/usuarios/novo">
+    <div class="grade-2">
+      <div class="campo">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" value="{{ valores.get('nome', '') }}" required>
+      </div>
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="text" id="email" name="email" value="{{ valores.get('email', '') }}" required>
+      </div>
+    </div>
+
+    <div class="grade-2">
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" required>
+      </div>
+      <div class="campo">
+        <label for="confirmar_senha">Confirmar senha</label>
+        <input type="password" id="confirmar_senha" name="confirmar_senha" required>
+      </div>
+    </div>
+    <p class="rodape-meta" style="margin-top: -0.5rem; margin-bottom: 1.25rem;">
+      Mínimo de 8 caracteres — passe pro usuário por fora (não é enviada por e-mail).
+    </p>
+
+    <div class="campo">
+      <label for="papel">Papel de acesso</label>
+      <select id="papel" name="papel">
+        {% for p in papeis %}
+          <option value="{{ p.value }}" {% if valores.get('papel') == p.value %}selected{% endif %}>{{ p.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label>Escritório/empresa</label>
+      <div class="radios">
+        <label>
+          <input type="radio" name="tenant_modo" value="existente" id="modo-existente"
+                 {% if valores.get('tenant_modo', 'existente') == 'existente' %}checked{% endif %}>
+          Já existente
+        </label>
+        <label>
+          <input type="radio" name="tenant_modo" value="novo" id="modo-novo"
+                 {% if valores.get('tenant_modo') == 'novo' %}checked{% endif %}>
+          Criar novo
+        </label>
+      </div>
+    </div>
+
+    <div class="campo" id="campo-tenant-existente">
+      <label for="tenant_id">Selecione</label>
+      <select id="tenant_id" name="tenant_id">
+        <option value="" disabled {% if not valores.get('tenant_id') %}selected{% endif %}>Selecione…</option>
+        {% for t in tenants %}
+          <option value="{{ t.id }}" {% if valores.get('tenant_id')|string == t.id|string %}selected{% endif %}>
+            {{ t.nome }} ({{ t.tipo.value }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grade-2" id="campo-tenant-novo" style="display: none;">
+      <div class="campo">
+        <label for="tenant_nome">Nome do escritório/empresa</label>
+        <input type="text" id="tenant_nome" name="tenant_nome" value="{{ valores.get('tenant_nome', '') }}">
+      </div>
+      <div class="campo">
+        <label for="tenant_tipo">Tipo</label>
+        <select id="tenant_tipo" name="tenant_tipo">
+          {% for t in tipos_tenant %}
+            <option value="{{ t.value }}" {% if valores.get('tenant_tipo') == t.value %}selected{% endif %}>{{ t.value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Criar usuário</button>
+  </form>
+</section>
+
+<script>
+  (function () {
+    var existente = document.getElementById('modo-existente');
+    var novo = document.getElementById('modo-novo');
+    var campoExistente = document.getElementById('campo-tenant-existente');
+    var campoNovo = document.getElementById('campo-tenant-novo');
+
+    function atualizar() {
+      var criandoNovo = novo.checked;
+      campoExistente.style.display = criandoNovo ? 'none' : 'block';
+      campoNovo.style.display = criandoNovo ? 'grid' : 'none';
+    }
+    existente.addEventListener('change', atualizar);
+    novo.addEventListener('change', atualizar);
+    atualizar();
+  })();
+</script>
+
+{% endblock %}
